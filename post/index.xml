@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Posts on Script Kiddie</title>
+    <link>http://bhupixb.github.io/post/</link>
+    <description>Recent content in Posts on Script Kiddie</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Wed, 26 Jan 2022 22:07:06 +0530</lastBuildDate><atom:link href="http://bhupixb.github.io/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>CLI Tools</title>
+      <link>http://bhupixb.github.io/post/linuxtools/</link>
+      <pubDate>Wed, 26 Jan 2022 22:07:06 +0530</pubDate>
+      
+      <guid>http://bhupixb.github.io/post/linuxtools/</guid>
+      <description>Tools I use on command line. I love exploring cli tools that saves my time on cli and more importantly prints the stuff with syntax highlightling or good visualizations. Here are a bunch of which i use:
+  dust
+Dust gives an instant overview of disk space used by directories. Github.   duf
+Shows Disk Usage/Free Utility in a nice table format. Github.
+  bat
+It&amp;rsquo;s a clone of `cat` with syntax highlighting support for a ton of languages.</description>
+    </item>
+    
+  </channel>
+</rss>
