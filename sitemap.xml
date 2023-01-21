@@ -2,17 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>http://bhupixb.github.io/post/linuxtools/</loc>
-    <lastmod>2022-01-26T22:07:06+05:30</lastmod>
+    <loc>http://example.org/intro/</loc>
+    <priority>0</priority>
   </url><url>
-    <loc>http://bhupixb.github.io/post/</loc>
-    <lastmod>2022-01-26T22:07:06+05:30</lastmod>
+    <loc>http://example.org/categories/</loc>
   </url><url>
-    <loc>http://bhupixb.github.io/</loc>
-    <lastmod>2022-01-26T22:07:06+05:30</lastmod>
+    <loc>http://example.org/</loc>
   </url><url>
-    <loc>http://bhupixb.github.io/categories/</loc>
-  </url><url>
-    <loc>http://bhupixb.github.io/tags/</loc>
+    <loc>http://example.org/tags/</loc>
   </url>
 </urlset>
