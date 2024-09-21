@@ -5,12 +5,8 @@ dateStart: "7 Jan 2021"
 dateEnd: "30 Sept 2024"
 ---
 
-This is going to be a long one :)
 
-I was just out of college when I first joined Zeta.
-I had only used C/C++ for [Competitive Programming](https://www.stopstalk.com/user/profile/bhupixb), no experience with <i>Frontend/Backend/Devops</i>. I wasn't even familiar with <b>git</b>.
-During first few weeks of work, my mentor explained me some work and asked me to create a PR for it and share with him.
-I googled "PR" and the first result was "Public Relations". I was like what does this guy want? On asking my fellow team mates I got to know he meant "Pull Request, at some places it's referred to as CL. That was the first time, I setup git and learned a bit about it.
+This is going to be a long one :)
 
 I was just out of college when I first joined **Zeta**.
 
@@ -47,15 +43,19 @@ aws_rds_cpuutilization_threshold{dimension_DBInstanceIdentifier="my-aws-rds", ..
 ```
 
 #### One stop database solution for devs (July 2021 - Feb 2022)
-Data Infra team was ok but I wasn't satisfied as I didn't code a lot and I wrote a lot of helm charts there. I was more interested in Coding. So I tried a new FrontEnd project. I never touched Html/Css before this, not even during my Undergraduate.
+The **Data Infra** team was ok, but I wasn't satisfied as I didn't code a lot and wrote a lot of Helm charts there. I was more interested in **coding**. So, I tried a new **FrontEnd** project. I had never touched **HTML/CSS** before this—not even during my undergraduate.
 
-In this project, I worked on building an internal website for monitoring and accessing logical databases(Postgres).
-It has tools embedded e.g. [pgweb](https://github.com/sosedoff/pgweb) for accessing database, [pgbadger](https://github.com/darold/pgbadger) for analysing slow queries etc.
-It gave a single place for all database related tools and monitoring, passwordless login to Database(details omitted).
-This was built from empty web page to fully working state with Google auth as login using Vue JS, Typescript, SCSS, Buefy.
-**ps**: I have omitted lots of internal workings above for obvious reasons.
+In this project, I worked on building an internal website for monitoring and accessing logical databases (Postgres).  
+It has tools embedded, e.g. [pgweb](https://github.com/sosedoff/pgweb) for accessing the database, [pgbadger](https://github.com/darold/pgbadger) for analyzing slow queries, etc.  
+It provided a single place for all database-related tools and monitoring, with passwordless login to the database (details omitted).  
 
-It was an interesting experience, I learnt about how FE works, different type of http request methods, REST, using DevTools for debugging, collaborating with BE folks, finalizing API specs etc etc. But I also realized that it's not for me. So I went on to try something new.
+This was built from an empty web page to a fully working state with **Google Auth** as login, using **Vue JS**, **Typescript**, **SCSS**, and **Buefy**.
+
+**PS**: I have omitted lots of internal workings above for obvious reasons.
+
+It was an interesting experience. I learned about how FE works, different types of HTTP request methods, **REST**, using DevTools for debugging, collaborating with BE folks, finalizing API specs, etc.  
+But I also realized that **Frontend** is not for me, so I went on to try something new.
+
 
 
 #### Data Engineering Flink and Airflow (March 2022 - March 2023)
