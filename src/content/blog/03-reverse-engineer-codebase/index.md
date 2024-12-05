@@ -2,7 +2,7 @@
 title: "Reverse Engineering a codebase"
 summary: "Reverse Engineering a codebase with cli tools ripgrep(rg) and fd"
 date: "Dec 5 2024"
-draft: true
+draft: false
 tags:
 - Dev Skills
 ---
