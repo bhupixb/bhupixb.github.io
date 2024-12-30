@@ -120,7 +120,7 @@ Building a product is one thing, but advocating for it, gathering feedback, iter
 **Testing at scale:**
 We did load testing of our platform to prove it's scalability and reliability. Some of the tests we did:
 
--  A batch job to execute 200 Million HTTP requests(avg 100 ms latency) in 28 minutes with 15 Task Manager pods.
+-  A batch job to execute ~200 Million HTTP requests(avg 100 ms latency) in 28 minutes with 15 Task Manager pods. It was later used as part of a larger project which is mentioned in AWS blog [here](https://aws.amazon.com/solutions/case-studies/zeta-amazon-eks/).
 -  Generating and uploading 40 million credit card pdf statements in 5 mins. We had to do a lot of tuning of flink cluster as well as S3 side for testing this scale. 40M file upload is not a big deal, but doing it in 5 min is. We faced [rate limits](https://xebia.com/blog/optimizing-performance-of-amazon-s3/) from S3.
 
 
