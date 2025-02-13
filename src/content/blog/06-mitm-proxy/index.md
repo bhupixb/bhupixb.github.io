@@ -51,3 +51,10 @@ Then, change your service configuration to point the third-party service endpoin
 ### Additional Features
 I've only touched the surface—Mitm Proxy also supports other protocols like TCP, WebSockets, and DNS.
 If you want to inspect HTTPS traffic, you can install the Mitm certificate. Follow this video [tutotial](https://youtu.be/S-5Sx561jnk?t=136).
+
+### References
+
+- [Mitm Proxy Documentation](https://docs.mitmproxy.org/stable/)
+- [Mitm Proxy GitHub Repository](https://github.com/mitmproxy/mitmproxy)
+- [Mitm Proxy Installation Guide](https://docs.mitmproxy.org/stable/overview-installation/)
+- [Mitm Proxy Tutorials](https://docs.mitmproxy.org/stable/tutorials/)
