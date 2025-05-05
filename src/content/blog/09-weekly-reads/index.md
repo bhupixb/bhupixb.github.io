@@ -1,0 +1,1 @@
+https://kaanyagci.hashnode.dev/your-ops-team-hates-you-because-you-dont-know-cmd-vs-entrypoint

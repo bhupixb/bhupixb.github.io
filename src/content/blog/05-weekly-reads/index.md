@@ -1,21 +1,47 @@
 ---
-title: "New Blog Series: Weekly Reads"
-summary: "A quick summary of posts I read weekly"
-date: "Dec 30 2024"
+title: "Weekly Reads: 5 May 2024"
+summary: "Curated links and insights from what I read this week."
+date: "May 5 2025"
 draft: false
 tags:
 - Weekly Reads
 ---
-I am starting a new blog series where I will share (once every week) articles that I read from time to time.  
-I often follow Reddit, Hacker News, YouTube, and some newsletters from which I pick articles and read the ones I find interesting (at a quick glance).  
 
-Most of the content I read is not directly related to my job.  
-It could include general software engineering advice, developer productivity tips, new tools, or articles about how something works.  
+Here’s a list of articles, videos, or tools I found interesting this week, along with short notes on why they caught my attention.
 
-### Why am I sharing this?  
+---
 
-1. **A personal logbook**:  
-   I often read things I find very interesting, but later, when I need them for reference, I struggle to locate them via Google search unless they are very popular answers or articles.  
+### 📰 Articles
 
-2. **For the audience**:  
-   In case someone else finds them useful, I’d love to share my findings.  
+1. **[Dockerfile: You Don't Know CMD vs ENTRYPOINT](https://kaanyagci.hashnode.dev/your-ops-team-hates-you-because-you-dont-know-cmd-vs-entrypoint)**
+   *Explains the difference between cmd vs entrypoint and why they are crucial for handling
+   graceful shutdown etc.*
+
+2. **[Docker Events](https://kaanyagci.hashnode.dev/reading-docker-container-logs-is-not-debugging-its-guessing)**
+   *The author describes how $ docker events command can be used to debug issues with your docker containers.*
+
+3. **[Memory bandwidth napkin math](https://www.forrestthewoods.com/blog/memory-bandwidth-napkin-math/)**
+   *Quite a useful read, explains that memory reads has a limit and why we can't
+   infinitely scale vertically just by adding more memory to a server.*
+
+4. **[Digital hygiene](https://karpathy.bearblog.dev/digital-hygiene/)**
+   *A must read for everyone.*
+
+---
+
+### 🎥 Videos
+
+1. **[Configure your git](https://www.youtube.com/watch?v=G3NJzFX6XhY)**
+   *Configuring your git beyond defaults. I really liked the git URL and commit template trick.*
+
+---
+
+### 🛠️ Tools / Projects
+
+1. **[How to hunt](https://github.com/KathanP19/HowToHunt)**
+   *Interesting stuff on hunting web vulnerabilties using different methods.*
+
+---
+
+That’s all for this week!
+If you found something great recently, feel free to share it with me.
