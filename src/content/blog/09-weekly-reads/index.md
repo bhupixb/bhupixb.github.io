@@ -1,5 +1,5 @@
 ---
-title: "Weekly Reads: 5 May 2024"
+title: "Weekly Reads: 5 May 2025"
 summary: "Curated links and insights from what I read this week."
 date: "May 5 2025"
 draft: false
