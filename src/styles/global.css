@@ -24,7 +24,7 @@ html {
   overflow-y: scroll;
   color-scheme: light dark;
   background-color: #08090a;
-  font-family: "MonoLisa", "ml", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", "Atkinson", sans-serif;
+  font-family: "Atkinson", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   text-rendering: optimizeLegibility;
 }
 
@@ -41,7 +41,7 @@ body {
 }
 
 body {
-  @apply relative flex flex-col;
+  @apply relative flex flex-col font-sans;
   background-image:
     radial-gradient(circle at top left, rgb(56 189 248 / 0.1), transparent 34rem),
     linear-gradient(rgb(255 255 255 / 0.025) 1px, transparent 1px),

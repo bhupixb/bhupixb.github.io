@@ -7,8 +7,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        "sans": ["MonoLisa", "ml", ...defaultTheme.fontFamily.mono, "Atkinson", ...defaultTheme.fontFamily.sans],
-        "display": ["MonoLisa", "ml", ...defaultTheme.fontFamily.mono, "Nunito", "Atkinson", ...defaultTheme.fontFamily.sans],
+        "sans": ["Atkinson", ...defaultTheme.fontFamily.sans],
+        "display": ["Atkinson", "Nunito", ...defaultTheme.fontFamily.sans],
         "mono": ["MonoLisa", "ml", ...defaultTheme.fontFamily.mono],
       },
       colors: {
