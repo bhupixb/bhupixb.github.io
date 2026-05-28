@@ -32,15 +32,15 @@ export default function Projects({ data, tags }: Props) {
   }
 
   return (
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 gap-8 sm:grid-cols-3">
       <div class="col-span-3 sm:col-span-1">
         <div class="sticky top-24">
-          <div class="text-sm font-semibold uppercase mb-2 text-black dark:text-white">Filter</div>
-          <ul class="flex flex-wrap sm:flex-col gap-1.5">
+          <div class="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-ink-300">Filter</div>
+          <ul class="flex flex-wrap gap-2 sm:flex-col">
             <For each={tags}>
               {(tag) => (
                 <li>
-                  <button onClick={() => toggleTag(tag)} class={cn("w-full px-2 py-1 rounded", "whitespace-nowrap overflow-hidden overflow-ellipsis", "flex gap-2 items-center", "bg-black/5 dark:bg-white/10", "hover:bg-black/10 hover:dark:bg-white/15", "transition-colors duration-300 ease-in-out", filter().has(tag) && "text-black dark:text-white")}>
+                  <button onClick={() => toggleTag(tag)} class={cn("w-full rounded-md px-3 py-2", "whitespace-nowrap overflow-hidden overflow-ellipsis", "flex items-center gap-2", "border border-black/10 bg-white/65 text-zinc-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-ink-300", "hover:border-sky-400/50 hover:text-zinc-950 dark:hover:border-accent-sky/50 dark:hover:text-ink-100", "transition-colors duration-300 ease-in-out", filter().has(tag) && "border-sky-400/60 text-zinc-950 dark:border-accent-sky/60 dark:text-ink-100")}>
                     <svg class={cn("size-5 fill-black/50 dark:fill-white/50", "transition-colors duration-300 ease-in-out", filter().has(tag) && "fill-black dark:fill-white")}>
                       <use href={`/ui.svg#square`} class={cn(!filter().has(tag) ? "block" : "hidden")} />
                       <use href={`/ui.svg#square-check`} class={cn(filter().has(tag) ? "block" : "hidden")} />
@@ -55,7 +55,7 @@ export default function Projects({ data, tags }: Props) {
       </div>
       <div class="col-span-3 sm:col-span-2">
         <div class="flex flex-col">
-          <div class="text-sm uppercase mb-2">
+          <div class="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-ink-300">
             SHOWING {projects().length} OF {data.length} PROJECTS
           </div>
           <ul class="flex flex-col gap-3">

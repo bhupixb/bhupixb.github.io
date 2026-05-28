@@ -7,7 +7,24 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        "sans": ["Atkinson", ...defaultTheme.fontFamily.sans],
+        "sans": ["MonoLisa", "ml", ...defaultTheme.fontFamily.mono, "Atkinson", ...defaultTheme.fontFamily.sans],
+        "display": ["MonoLisa", "ml", ...defaultTheme.fontFamily.mono, "Nunito", "Atkinson", ...defaultTheme.fontFamily.sans],
+        "mono": ["MonoLisa", "ml", ...defaultTheme.fontFamily.mono],
+      },
+      colors: {
+        ink: {
+          950: "#08090A",
+          900: "#0C0D10",
+          850: "#111318",
+          800: "#151821",
+          700: "#23262F",
+          300: "#9CA3AF",
+          100: "#EDEEF0",
+        },
+        accent: {
+          sky: "#38BDF8",
+          lime: "#A3E635",
+        },
       },
       typography: {
         DEFAULT: {

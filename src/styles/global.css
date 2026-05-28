@@ -22,57 +22,90 @@
 
 html {
   overflow-y: scroll;
-  color-scheme: light;
-  background-color: white;
-  font-family: "Atkinson", sans-serif;
-  
+  color-scheme: light dark;
+  background-color: #08090a;
+  font-family: "MonoLisa", "ml", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", "Atkinson", sans-serif;
+  text-rendering: optimizeLegibility;
 }
 
 html.dark {
   color-scheme: dark;
-  background-color: black;
+  background-color: #08090a;
 }
 
 html,
 body {
   @apply h-full w-full antialiased;
-  @apply bg-white dark:bg-black;
-  @apply text-black/75 dark:text-white/75;
+  @apply bg-zinc-50 dark:bg-ink-950;
+  @apply text-zinc-700 dark:text-ink-300;
 }
 
 body {
   @apply relative flex flex-col;
+  background-image:
+    radial-gradient(circle at top left, rgb(56 189 248 / 0.1), transparent 34rem),
+    linear-gradient(rgb(255 255 255 / 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.025) 1px, transparent 1px);
+  background-size: auto, 48px 48px, 48px 48px;
+  background-attachment: fixed;
 }
 
 main {
-  @apply flex flex-col flex-1 bg-white dark:bg-black;
+  @apply flex flex-col flex-1 bg-transparent;
 }
 
 header {
-  @apply border-b;
+  @apply border-b border-black/10 dark:border-white/10;
   @apply transition-all duration-300 ease-in-out;
 }
 
 header:not(.scrolled) {
-  @apply bg-transparent border-transparent;
+  @apply bg-zinc-50/75 dark:bg-ink-950/70;
+  @apply backdrop-blur-xl saturate-150;
 }
 
 header.scrolled {
-  @apply bg-white/75 dark:bg-black/50;
-  @apply border-black/10 dark:border-white/25;
-  @apply backdrop-blur-sm saturate-200;
+  @apply bg-white/90 dark:bg-ink-950/85;
+  @apply border-black/10 dark:border-white/10;
+  @apply backdrop-blur-xl saturate-150;
 }
 
 article {
-  @apply prose dark:prose-invert max-w-full pb-12;
+  @apply prose prose-zinc dark:prose-invert max-w-full pb-12;
+  @apply prose-headings:font-display prose-headings:font-semibold prose-headings:tracking-normal;
+  @apply prose-headings:text-zinc-950 dark:prose-headings:text-ink-100;
+  @apply prose-p:leading-8 prose-li:leading-8;
+  @apply prose-a:font-medium prose-a:text-sky-600 dark:prose-a:text-accent-sky prose-a:no-underline hover:prose-a:underline;
+  @apply prose-code:rounded prose-code:border prose-code:border-black/10 dark:prose-code:border-white/10 prose-code:bg-black/5 dark:prose-code:bg-white/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:font-mono prose-code:font-normal;
+  @apply prose-pre:border prose-pre:border-black/10 dark:prose-pre:border-white/10 prose-pre:bg-zinc-950 dark:prose-pre:bg-ink-900;
+  @apply prose-blockquote:border-l-sky-400 dark:prose-blockquote:border-l-accent-sky prose-blockquote:text-zinc-700 dark:prose-blockquote:text-ink-300;
+  @apply prose-table:text-sm prose-th:border prose-th:border-black/10 dark:prose-th:border-white/10 prose-td:border prose-td:border-black/10 dark:prose-td:border-white/10 prose-th:px-3 prose-th:py-2 prose-td:px-3 prose-td:py-2;
 }
 
 .page-heading {
-  @apply font-semibold text-black dark:text-white;
+  @apply font-display text-4xl font-semibold tracking-normal text-zinc-950 dark:text-ink-100;
 }
 
 .blend {
   @apply transition-all duration-300 ease-in-out;
+}
+
+::selection {
+  @apply bg-sky-300/40 text-zinc-950 dark:bg-accent-sky/30 dark:text-white;
+}
+
+a,
+button {
+  @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400;
+}
+
+.editorial-card {
+  @apply rounded-lg border border-black/10 bg-white/75 shadow-sm shadow-black/5 transition-all duration-300 ease-in-out;
+  @apply dark:border-white/10 dark:bg-ink-850/80 dark:shadow-black/20;
+}
+
+.editorial-card-hover {
+  @apply hover:-translate-y-0.5 hover:border-sky-400/45 hover:bg-white dark:hover:border-accent-sky/45 dark:hover:bg-ink-800/85;
 }
 
 /** Light theme particles on home page */
