@@ -7,7 +7,24 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        "sans": ["Atkinson", ...defaultTheme.fontFamily.sans],
+        "sans": ["Inter", "Atkinson", ...defaultTheme.fontFamily.sans],
+        "display": ["Space Grotesk", "Inter", "Atkinson", ...defaultTheme.fontFamily.sans],
+        "mono": ["JetBrains Mono", ...defaultTheme.fontFamily.mono],
+      },
+      colors: {
+        ink: {
+          950: "#08090A",
+          900: "#0C0D10",
+          850: "#111318",
+          800: "#151821",
+          700: "#23262F",
+          300: "#9CA3AF",
+          100: "#EDEEF0",
+        },
+        accent: {
+          sky: "#38BDF8",
+          lime: "#A3E635",
+        },
       },
       typography: {
         DEFAULT: {

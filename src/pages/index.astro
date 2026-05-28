@@ -1,215 +1,239 @@
 ---
 import { getCollection } from "astro:content"
 import PageLayout from "@layouts/PageLayout.astro"
-import ArrowCard from "@components/ArrowCard"
-import StackCard from "@components/StackCard.astro"
 import { SITE, SOCIALS } from "@consts"
-import TwinklingStars from "@components/TwinklingStars.astro"
-import MeteorShower from "@components/MeteorShower.astro"
+import { formatDate, readingTime } from "@lib/utils"
 
 const posts = (await getCollection("blog"))
   .filter(post => !post.data.draft)
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
-  .slice(0,3)
+  .slice(0, 3)
 
 const projects = (await getCollection("projects"))
   .filter(project => !project.data.draft)
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
-  .slice(0,3)
+  .slice(0, 3)
 
-const stack = [
-  { 
-    text: "Astro", 
-    icon: "flink", 
-    href: "https://flink.apache.org" 
+const skills = ["Java", "Spring Boot", "PostgreSQL", "Kubernetes", "Docker", "AWS", "Flink", "OpenAPI"]
+
+const workAreas = [
+  {
+    title: "Backend Engineering",
+    text: "Java, Spring Boot, REST APIs, service design, OpenAPI",
   },
-  { 
-    text: "Javascript", 
-    icon: "javascript", 
-    href: "https://www.javascript.com" 
+  {
+    title: "Infrastructure",
+    text: "Docker, Kubernetes, Helm, ArgoCD, CI/CD",
   },
-  { 
-    text: "Typescript", 
-    icon: "typescript", 
-    href: "https://www.typescriptlang.org" 
+  {
+    title: "Data & Streaming",
+    text: "Flink, Airflow, Trino, production data jobs",
   },
-  { 
-    text: "Tailwind", 
-    icon: "tailwind", 
-    href: "https://tailwindcss.com" 
+  {
+    title: "Security Curiosity",
+    text: "Android, networking, web security, practical debugging notes",
+  },
+]
+
+const stackGroups = [
+  {
+    title: "Languages",
+    items: ["Java", "Python", "Bash", "C++"],
+  },
+  {
+    title: "Backend",
+    items: ["Spring Boot", "REST", "OpenAPI", "PostgreSQL"],
+  },
+  {
+    title: "Infrastructure",
+    items: ["Docker", "Kubernetes", "Helm", "ArgoCD", "Jenkins"],
+  },
+  {
+    title: "Data",
+    items: ["Flink", "Airflow", "Trino"],
   },
 ]
 ---
 
 <PageLayout title="Home" description={SITE.DESCRIPTION}>
+  <div class="relative overflow-hidden">
+    <div class="pointer-events-none absolute inset-x-0 top-0 h-[34rem] bg-[radial-gradient(circle_at_50%_0%,rgba(56,189,248,0.18),transparent_36rem)] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(56,189,248,0.18),transparent_38rem)]"></div>
 
-  <!-- Light Mode: Particles -->
-  <div class='absolute inset-0 block dark:hidden'>
-    <div id='particles1' class='fixed inset-0'></div>
-    <div id='particles2' class='fixed inset-0'></div>
-    <div id='particles3' class='fixed inset-0'></div>
-  </div>
-
-  <!-- Dark Theme: Stars -->
-  <div class='absolute inset-0 bg-black hidden dark:block'>
-    <div id='stars1' class='fixed inset-0'></div>
-    <div id='stars2' class='fixed inset-0'></div>
-    <div id='stars3' class='fixed inset-0'></div>
-  </div>
-
-  <!-- Dark Theme: Twinkling Stars / Metors -->
-  <div id="galaxy" class="fixed inset-0">
-    <div class="hidden dark:block">
-      <TwinklingStars/>
-      <MeteorShower/>
-    </div>
-  </div>
-
-  <script is:inline src="/js/bg.js"></script>
-  
-  <!-- HERO -->
-  <section class="relative h-screen w-full">
-    <div id="planetcont" class='animate absolute inset-0 top-1/4 overflow-hidden'>
-      <div id="crescent" class='absolute top-0 left-1/2 -translate-x-1/2 w-[250vw] min-h-[100vh] aspect-square rounded-full p-[1px] bg-gradient-to-b from-black/25 dark:from-white/75 from-0% to-transparent to-5%'>
-        <div id="planet" class='w-full h-full bg-white dark:bg-black rounded-full p-[1px] overflow-hidden flex justify-center'>
-          <div id="blur" class='w-full h-20 rounded-full bg-neutral-900/25 dark:bg-white/25 blur-3xl'/>
-        </div>
+    <section class="relative mx-auto flex min-h-[92vh] w-full max-w-screen-xl flex-col justify-center px-5 pb-16 pt-28 md:pb-24 md:pt-36">
+      <div class="max-w-4xl">
+        <p class="mb-5 inline-flex rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-sky-700 dark:text-accent-sky">
+          Bhupendra Yadav
+        </p>
+        <h1 class="font-display text-5xl font-semibold tracking-normal text-zinc-950 dark:text-ink-100 sm:text-6xl lg:text-7xl">
+          Backend & Infrastructure Engineer
+        </h1>
+        <p class="mt-6 max-w-2xl text-lg leading-8 text-zinc-700 dark:text-ink-300">
+          I build reliable backend systems, Kubernetes platforms, and production-grade Java services. I write about backend engineering, infrastructure, distributed systems, and practical software craftsmanship.
+        </p>
       </div>
-    </div>
-    <div class="animate absolute h-full w-full flex items-center justify-center">
-      <div class='relative w-full h-full flex items-center justify-center'>
-        <div class='p-5 text-center'>
-          <p class='animated text-lg md:text-xl lg:text-2xl font-semibold opacity-75'>
-            Hello, I am
-          </p>
-          <p class='animated text-2xl md:text-3xl lg:text-4xl font-bold uppercase text-black dark:text-white'>
-            Bhupendra Yadav
-          </p>
-          <p class='animated text-sm md:text-base lg:text-lg opacity-75'>
-            A regular guy passionate about Software Engineering.
-          </p>
-          <div id="ctaButtons" class='animated flex flex-wrap gap-4 justify-center mt-5'>
-            <a href='/blog' class='py-2 px-4 rounded truncate text-xs md:text-sm lg:text-base bg-black dark:bg-white text-white dark:text-black hover:opacity-75 blend'>
-              Read my blog
-            </a>
-            <a href='/work' class='py-2 px-4 truncate rounded text-xs md:text-sm lg:text-base border border-black/25 dark:border-white/25 hover:bg-black/5 hover:dark:bg-white/15 blend'>
-              View my work
-            </a>
-          </div>
-        </div>
+
+      <div class="mt-8 flex flex-wrap gap-2">
+        {skills.map((skill) => (
+          <span class="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-sm font-medium text-zinc-800 dark:border-white/10 dark:bg-white/5 dark:text-ink-100">
+            {skill}
+          </span>
+        ))}
       </div>
-    </div>
-  </section>
 
-  <div class="relative bg-white dark:bg-black">
-    <div class="mx-auto max-w-screen-sm p-5 space-y-24 pb-16">
+      <div class="mt-10 flex flex-wrap gap-3">
+        <a href="/blog" class="rounded-md bg-zinc-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 dark:bg-ink-100 dark:text-ink-950 dark:hover:bg-white">
+          Read technical notes
+        </a>
+        <a href="/projects" class="rounded-md border border-black/15 bg-white/70 px-5 py-3 text-sm font-semibold text-zinc-950 transition hover:border-sky-400/50 hover:bg-white dark:border-white/15 dark:bg-white/5 dark:text-ink-100 dark:hover:border-accent-sky/50 dark:hover:bg-white/10">
+          View projects
+        </a>
+        <a href="https://github.com/bhupixb" target="_blank" rel="noreferrer" class="rounded-md border border-black/15 px-5 py-3 text-sm font-semibold text-zinc-950 transition hover:border-sky-400/50 hover:bg-white/80 dark:border-white/15 dark:text-ink-100 dark:hover:border-accent-sky/50 dark:hover:bg-white/10">
+          GitHub
+        </a>
+      </div>
 
-      <!-- About Section -->
-      <section class="animate">
-        <article>
-          <p>I am a <b>Software Engineer</b> with experience across <b>Frontend</b>, <b>DevOps</b>, and <b>Backend</b> development. Currently working on <b>Backend and Infrastructure Engineering</b>, where I focus on building robust, scalable systems.</p>
-
-          <p>I have hands-on experience self-hosting applications on <b>Kubernetes</b> and running large-scale <b>Apache Flink</b> jobs in production. I specialize in writing production-grade backend services in <b>Java and Spring Boot</b>, building them from the ground up.</p>
-
-          <p>I was first introduced to programming in 2017 during my college years, where I developed a strong interest in <b>Competitive Programming</b>. Here's my <a href="https://www.stopstalk.com/user/profile/bhupixb">CP profile</a>.</p>
-        </article>
-      </section>
-
-      <!-- Tech Stack Section -->
-      <section class="animate">
-        <div class="space-y-4">
-          <p class="font-semibold text-black dark:text-white">
-            My tech stack:
-          </p>
-          <div class="flex flex-wrap items-center gap-2 mt-5">
-            <p><b>Languages:</b> C & C++ (for DS and algorithms), Python & Bash (for scripting), Java (Backend)</p>
-            <p><b>Cloud:</b> AWS</p>
-
-            <p><b>Databases:</b> PostgreSQL</p>
-
-            <p><b>DevOps:</b></p>
-            <ul>
-              <li><b>CI/CD:</b> Jenkins, ArgoCD, Helm</li>
-              <li><b>Containerization:</b> Docker, Kubernetes</li>
-            </ul>
-
-            <p><b>Frameworks and Libraries:</b> Apache Airflow, Apache Flink, Trino, Spring, Spring Boot</p>
-
-            <p><b>Linux utils:</b> ls, grep, awk, sed, find, dig, etc.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- Blog Preview Section -->
-      <section class="animate">
-        <div class="space-y-4">
-          <div class="flex justify-between">
-            <p class="font-semibold text-black dark:text-white">
-              Recent posts
-            </p>
-            <a href="/blog" class="w-fit col-span-3 group flex gap-1 items-center underline decoration-[.5px] decoration-black/25 dark:decoration-white/50 hover:decoration-black dark:hover:decoration-white text-black dark:text-white underline-offset-2 blend">
-              <span class="text-black/75 dark:text-white/75 group-hover:text-black group-hover:dark:text-white blend">
-                All posts
-              </span>
-            </a>
-          </div>
-          <ul class="space-y-4">
-            {posts.map((post) => (
-              <li>
-                <ArrowCard entry={post} />
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <!-- Project Preview Section -->
-      <section class="animate">
-        <div class="space-y-4">
-          <div class="flex justify-between">
-            <p class="font-semibold text-black dark:text-white">
-              Recent projects
-            </p>
-            <a href="/projects" class="w-fit col-span-3 group flex gap-1 items-center underline decoration-[.5px] decoration-black/25 dark:decoration-white/50 hover:decoration-black dark:hover:decoration-white text-black dark:text-white underline-offset-2 blend">
-              <span class="text-black/75 dark:text-white/75 group-hover:text-black group-hover:dark:text-white blend">
-                All projects
-              </span>
-            </a>
-          </div>
-          <ul class="space-y-4">
-            {projects.map((project) => (
-              <li>
-                <ArrowCard entry={project} />
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <!-- Contact Section -->
-      <section class="animate">
+      <div class="mt-16 grid gap-3 border-l border-black/10 pl-5 text-sm text-zinc-600 dark:border-white/10 dark:text-ink-300 sm:grid-cols-3 sm:border-l-0 sm:pl-0">
         <div>
-          <p class="font-semibold text-black dark:text-white">
-            Let's Connect
-          </p>
-          <p>
-            Reach out to me via email or on social media.
-          </p>
-          <div class="grid grid-cols-4 gap-y-2 mt-4 auto-cols-min">
-            {SOCIALS.map(social => (
-              <div class="col-span-1 flex items-center gap-1">
-                <span class="whitespace-nowrap truncate">
-                  {social.NAME}
-                </span>
+          <div class="font-semibold text-zinc-950 dark:text-ink-100">Systems</div>
+          <div>Backend services, APIs, and data contracts.</div>
+        </div>
+        <div>
+          <div class="font-semibold text-zinc-950 dark:text-ink-100">Platforms</div>
+          <div>Kubernetes, delivery pipelines, and operations.</div>
+        </div>
+        <div>
+          <div class="font-semibold text-zinc-950 dark:text-ink-100">Writing</div>
+          <div>Practical notes from debugging and production work.</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="relative mx-auto max-w-screen-xl space-y-24 px-5 pb-20">
+      <section class="animate">
+        <div class="mb-8 max-w-2xl">
+          <p class="text-sm font-semibold uppercase tracking-[0.16em] text-sky-700 dark:text-accent-sky">Focus</p>
+          <h2 class="mt-3 font-display text-3xl font-semibold tracking-normal text-zinc-950 dark:text-ink-100">What I work on</h2>
+        </div>
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {workAreas.map((area) => (
+            <div class="editorial-card editorial-card-hover p-5">
+              <h3 class="font-display text-lg font-semibold text-zinc-950 dark:text-ink-100">{area.title}</h3>
+              <p class="mt-3 text-sm leading-6 text-zinc-600 dark:text-ink-300">{area.text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section class="animate">
+        <div class="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <p class="text-sm font-semibold uppercase tracking-[0.16em] text-sky-700 dark:text-accent-sky">Writing</p>
+            <h2 class="mt-3 font-display text-3xl font-semibold tracking-normal text-zinc-950 dark:text-ink-100">Recent technical notes</h2>
+          </div>
+          <a href="/blog" class="text-sm font-semibold text-zinc-950 underline decoration-black/20 underline-offset-4 transition hover:decoration-sky-500 dark:text-ink-100 dark:decoration-white/20 dark:hover:decoration-accent-sky">
+            All posts
+          </a>
+        </div>
+        <div class="grid gap-4 lg:grid-cols-3">
+          {posts.map((post) => (
+            <a href={`/blog/${post.slug}`} class="editorial-card editorial-card-hover group flex min-h-64 flex-col p-5">
+              <div class="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-ink-300">
+                <span>{formatDate(post.data.date)}</span>
+                <span class="h-1 w-1 rounded-full bg-zinc-300 dark:bg-white/30"></span>
+                <span>{readingTime(post.body)}</span>
               </div>
-              <div class="col-span-3 truncate">
-                <a href={social.HREF} target="_blank" class="w-fit col-span-3 group flex gap-1 items-center underline decoration-[.5px] decoration-black/25 dark:decoration-white/50 hover:decoration-black dark:hover:decoration-white text-black dark:text-white underline-offset-2 blend">
-                  <span class="text-black/75 dark:text-white/75 group-hover:text-black group-hover:dark:text-white blend">
-                    {social.TEXT}
+              <h3 class="mt-5 font-display text-xl font-semibold tracking-normal text-zinc-950 transition group-hover:text-sky-700 dark:text-ink-100 dark:group-hover:text-accent-sky">
+                {post.data.title}
+              </h3>
+              <p class="mt-3 line-clamp-3 text-sm leading-6 text-zinc-600 dark:text-ink-300">
+                {post.data.summary}
+              </p>
+              <ul class="mt-auto flex flex-wrap gap-2 pt-6">
+                {post.data.tags.slice(0, 3).map((tag) => (
+                  <li class="rounded-full bg-black/5 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-white/10 dark:text-ink-300">
+                    {tag}
+                  </li>
+                ))}
+              </ul>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      <section class="animate">
+        <div class="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <p class="text-sm font-semibold uppercase tracking-[0.16em] text-sky-700 dark:text-accent-sky">Projects</p>
+            <h2 class="mt-3 font-display text-3xl font-semibold tracking-normal text-zinc-950 dark:text-ink-100">Recent project work</h2>
+          </div>
+          <a href="/projects" class="text-sm font-semibold text-zinc-950 underline decoration-black/20 underline-offset-4 transition hover:decoration-sky-500 dark:text-ink-100 dark:decoration-white/20 dark:hover:decoration-accent-sky">
+            All projects
+          </a>
+        </div>
+        <div class="grid gap-4 lg:grid-cols-3">
+          {projects.map((project) => (
+            <a href={`/projects/${project.slug}`} class="editorial-card editorial-card-hover group flex min-h-56 flex-col p-5">
+              <div class="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-ink-300">
+                {formatDate(project.data.date)}
+              </div>
+              <h3 class="mt-5 font-display text-xl font-semibold tracking-normal text-zinc-950 transition group-hover:text-sky-700 dark:text-ink-100 dark:group-hover:text-accent-sky">
+                {project.data.title}
+              </h3>
+              <p class="mt-3 line-clamp-3 text-sm leading-6 text-zinc-600 dark:text-ink-300">
+                {project.data.summary}
+              </p>
+              <ul class="mt-auto flex flex-wrap gap-2 pt-6">
+                {project.data.tags.slice(0, 3).map((tag) => (
+                  <li class="rounded-full bg-black/5 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-white/10 dark:text-ink-300">
+                    {tag}
+                  </li>
+                ))}
+              </ul>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      <section class="animate grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+        <div>
+          <p class="text-sm font-semibold uppercase tracking-[0.16em] text-sky-700 dark:text-accent-sky">Stack</p>
+          <h2 class="mt-3 font-display text-3xl font-semibold tracking-normal text-zinc-950 dark:text-ink-100">Tools I reach for</h2>
+          <p class="mt-4 leading-7 text-zinc-600 dark:text-ink-300">
+            A practical mix for backend services, platform work, automation, and data systems.
+          </p>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          {stackGroups.map((group) => (
+            <div class="editorial-card p-5">
+              <h3 class="font-display text-lg font-semibold text-zinc-950 dark:text-ink-100">{group.title}</h3>
+              <div class="mt-4 flex flex-wrap gap-2">
+                {group.items.map((item) => (
+                  <span class="rounded-md border border-black/10 bg-black/[0.03] px-2.5 py-1 text-sm text-zinc-700 dark:border-white/10 dark:bg-white/5 dark:text-ink-300">
+                    {item}
                   </span>
-                </a>
+                ))}
               </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section class="animate editorial-card p-6 md:p-8">
+        <div class="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
+          <div class="max-w-2xl">
+            <p class="text-sm font-semibold uppercase tracking-[0.16em] text-sky-700 dark:text-accent-sky">Contact</p>
+            <h2 class="mt-3 font-display text-3xl font-semibold tracking-normal text-zinc-950 dark:text-ink-100">Let us talk backend systems</h2>
+            <p class="mt-4 leading-7 text-zinc-600 dark:text-ink-300">
+              Reach out for engineering conversations, technical writing, infrastructure problems, or backend architecture notes.
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            {SOCIALS.map((social) => (
+              <a href={social.HREF} target={social.HREF.startsWith("http") ? "_blank" : undefined} rel={social.HREF.startsWith("http") ? "noreferrer" : undefined} class="rounded-md border border-black/10 bg-white/70 px-3 py-2 text-sm font-medium text-zinc-800 transition hover:border-sky-400/50 hover:text-zinc-950 dark:border-white/10 dark:bg-white/5 dark:text-ink-300 dark:hover:border-accent-sky/50 dark:hover:text-ink-100">
+                {social.NAME}
+              </a>
             ))}
+          </div>
         </div>
       </section>
     </div>
