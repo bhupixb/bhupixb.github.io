@@ -5,7 +5,6 @@ dateStart: "7 Jan 2021"
 dateEnd: "30 Sept 2024"
 ---
 
-
 This is going to be a long one :)
 
 I was just out of college when I first joined **Zeta**.
@@ -20,53 +19,55 @@ Upon asking my fellow teammates, I got to know he meant **Pull Request**. (At so
 
 That was the first time I set up Git and learned a bit about it.
 
-
 tldr: I worked at Zeta for 3 yr 9 months. I worked on a lot of different things in my time there. I started as a DevOps guy, then to data engineering, and finally in the data Platform team as Backend dev.
 
 #### Granfana and Prometheus (Jan 2021 - June 2021)
-I initially joined the Data Infra team. 
+
+I initially joined the Data Infra team.
 
 - Built a Grafana dashboard for RDS monitoring with data source as Prometheus. We were earlier using AWS CloudWatch integration with grafana but I think it was costly from what I remember because we need to call CloudWatch API per user(Dev/SRE etc) opening the Dashboard. So we decided that we will scrape the metrics every 30s/1min from Cloudwatch and store it in our Prometheus.
-These metrics were scraped from AWS CloudWatch using [YACE exporter](https://github.com/nerdswords/yet-another-cloudwatch-exporter).
-Sample metrics:
-```sql
-aws_rds_cpuutilization_average{dimension_DBInstanceIdentifier="my-aws-rds", ...}
-```
+  These metrics were scraped from AWS CloudWatch using [YACE exporter](https://github.com/nerdswords/yet-another-cloudwatch-exporter).
+  Sample metrics:
+
+  ```sql
+  aws_rds_cpuutilization_average{dimension_DBInstanceIdentifier="my-aws-rds", ...}
+  ```
 
 - Alerting with dynamic thresholds using AWS RDS tags.
-Implemented a simple Backend service(using Flask and [prometheus client](https://github.com/prometheus/client_python)) which would list all RDS, parse the RDS tags and emit Prometheus metrics for alert thresholds.
-This allowed for more flexible and dynamic alerting configurations based on different RDS type.
-E.g. an RDS which has critical data can be configured to trigger an alert at a lower threshold than others. It also allowed to write a single alert rule(per metric type) in Prometheus which would trigger alerts based on these dynamic thresholds.
-Sample metrics:
-```sql
-aws_rds_cpuutilization_threshold{dimension_DBInstanceIdentifier="my-aws-rds", ...}
-```
+  Implemented a simple Backend service(using Flask and [prometheus client](https://github.com/prometheus/client_python)) which would list all RDS, parse the RDS tags and emit Prometheus metrics for alert thresholds.
+  This allowed for more flexible and dynamic alerting configurations based on different RDS type.
+  E.g. an RDS which has critical data can be configured to trigger an alert at a lower threshold than others. It also allowed to write a single alert rule(per metric type) in Prometheus which would trigger alerts based on these dynamic thresholds.
+  Sample metrics:
+
+  ```sql
+  aws_rds_cpuutilization_threshold{dimension_DBInstanceIdentifier="my-aws-rds", ...}
+  ```
 
 #### One stop database solution for devs (July 2021 - Feb 2022)
+
 The **Data Infra** team was ok, but I wasn't satisfied as I didn't code a lot and wrote a lot of Helm charts there. I was more interested in **coding**. So, I tried a new **FrontEnd** project. I had never touched **HTML/CSS** before this—not even during my undergraduate.
 
-In this project, I worked on building an internal website for monitoring and accessing logical databases (Postgres).  
-It has tools embedded, e.g. [pgweb](https://github.com/sosedoff/pgweb) for accessing the database, [pgbadger](https://github.com/darold/pgbadger) for analyzing slow queries, etc.  
-It provided a single place for all database-related tools and monitoring, with passwordless login to the database (details omitted).  
+In this project, I worked on building an internal website for monitoring and accessing logical databases (Postgres).
+It has tools embedded, e.g. [pgweb](https://github.com/sosedoff/pgweb) for accessing the database, [pgbadger](https://github.com/darold/pgbadger) for analyzing slow queries, etc.
+It provided a single place for all database-related tools and monitoring, with passwordless login to the database (details omitted).
 
 This was built from an empty web page to a fully working state with **Google Auth** as login, using **Vue JS**, **Typescript**, **SCSS**, and **Buefy**.
 
 **PS**: I have omitted lots of internal workings above for obvious reasons.
 
-It was an interesting experience. I learned about how FE works, different types of HTTP request methods, **REST**, using DevTools for debugging, collaborating with BE folks, finalizing API specs, etc.  
+It was an interesting experience. I learned about how FE works, different types of HTTP request methods, **REST**, using DevTools for debugging, collaborating with BE folks, finalizing API specs, etc.
 But I also realized that **Frontend** is not for me, so I went on to try something new.
 
-
-
 #### Data Engineering Flink and Airflow (March 2022 - March 2023)
+
 Then I moved to on to working with Flink and airflow. It was a flink library for very specific usecase for Batch processing.
 
 I mostly worked as an Infra guy, upgrading flink/Airflow to latest version, using Flink K8s operator for deploying flink clusters, grafana dashboards for monitoring, writing helm charts for deploying new flink clusters.
 
 I did not find it very interesting over time as after standardizing the setup, it was mostly about maintaining the setup and not much new learning.
 
-
 #### Flink as a Service (March 2023 - Sept 2024):
+
 Finally, I convinced my Manager that I want to work on Backend side of things and moves to a new team/project.
 
 In this new team we built **Flink as a Service** for **Record** (a record can be thought of as a Kafka event, a line in a file, or a row in a database, etc.) processing use cases for our entire organization.
@@ -88,15 +89,15 @@ We had an internal Java library that would translate these YAML specification to
 This platform consists of:
 
 1. A **Java library** on top of Flink, providing lots of out-of-the-box (OOTB) source/sink connectors, transformations, HTTP operators, etc. It was much more than just a wrapper over Flink, with features like:
-    - Custom metrics
-    - Exception logging
-    - Writing data to Flink's side output for record-level processing stats, etc.
+   - Custom metrics
+   - Exception logging
+   - Writing data to Flink's side output for record-level processing stats, etc.
 
 2. The **Control plane**, which accepts the job specification (defined in YAML/JSON) and executes the job. It has many metrics for job monitoring and reconciliation. I wrote most of the control plane in **Java + Spring Boot** for:
-    - Managing the end-to-end lifecycle of a Flink job
-    - Submitting new jobs
-    - Reconciling in-progress jobs
-    - Post-processing jobs once they are finished
+   - Managing the end-to-end lifecycle of a Flink job
+   - Submitting new jobs
+   - Reconciling in-progress jobs
+   - Post-processing jobs once they are finished
 
 3. **Self-hosted Flink clusters on K8s**. We self hosted Flink on K8s using Flink Kubernetes Operator. I used to manage it fully.My previous experience as DevOps helped a lot here.
 
@@ -118,10 +119,10 @@ Building a product is one thing, but advocating for it, gathering feedback, iter
 - We had to show how the platform solves their problems, and provides out-of-the-box **monitoring**, **observability**, **scaling**, **maintenance**, etc.
 
 **Testing at scale:**
+
 We did load testing of our platform to prove it's scalability and reliability. Some of the tests we did:
 
--  A batch job to execute ~200 Million HTTP requests(avg 100 ms latency) in 28 minutes with 15 Task Manager pods. It was later used as part of a larger project which is mentioned in AWS blog [here](https://aws.amazon.com/solutions/case-studies/zeta-amazon-eks/).
--  Generating and uploading 40 million credit card pdf statements in 5 mins. We had to do a lot of tuning of flink cluster as well as S3 side for testing this scale. 40M file upload is not a big deal, but doing it in 5 min is. We faced [rate limits](https://xebia.com/blog/optimizing-performance-of-amazon-s3/) from S3.
-
+- A batch job to execute ~200 Million HTTP requests(avg 100 ms latency) in 28 minutes with 15 Task Manager pods. It was later used as part of a larger project which is mentioned in AWS blog [here](https://aws.amazon.com/solutions/case-studies/zeta-amazon-eks/).
+- Generating and uploading 40 million credit card pdf statements in 5 mins. We had to do a lot of tuning of flink cluster as well as S3 side for testing this scale. 40M file upload is not a big deal, but doing it in 5 min is. We faced [rate limits](https://xebia.com/blog/optimizing-performance-of-amazon-s3/) from S3.
 
 It was the most challenging and interesting project I worked on at Zeta.
