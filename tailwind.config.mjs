@@ -7,9 +7,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        "sans": ["Inter", "Atkinson", ...defaultTheme.fontFamily.sans],
-        "display": ["Space Grotesk", "Inter", "Atkinson", ...defaultTheme.fontFamily.sans],
-        "mono": ["JetBrains Mono", ...defaultTheme.fontFamily.mono],
+        "sans": ["MonoLisa", "ml", ...defaultTheme.fontFamily.mono, "Atkinson", ...defaultTheme.fontFamily.sans],
+        "display": ["MonoLisa", "ml", ...defaultTheme.fontFamily.mono, "Nunito", "Atkinson", ...defaultTheme.fontFamily.sans],
+        "mono": ["MonoLisa", "ml", ...defaultTheme.fontFamily.mono],
       },
       colors: {
         ink: {

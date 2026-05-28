@@ -24,7 +24,7 @@ html {
   overflow-y: scroll;
   color-scheme: light dark;
   background-color: #08090a;
-  font-family: "Inter", "Atkinson", sans-serif;
+  font-family: "MonoLisa", "ml", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", "Atkinson", sans-serif;
   text-rendering: optimizeLegibility;
 }
 
