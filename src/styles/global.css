@@ -82,6 +82,15 @@ article {
   @apply prose-table:text-sm prose-th:border prose-th:border-black/10 dark:prose-th:border-white/10 prose-td:border prose-td:border-black/10 dark:prose-td:border-white/10 prose-th:px-3 prose-th:py-2 prose-td:px-3 prose-td:py-2;
 }
 
+article :where(pre code):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  @apply rounded-none border-0 bg-transparent p-0 font-normal;
+}
+
+article :where(pre code)::before,
+article :where(pre code)::after {
+  content: none;
+}
+
 .page-heading {
   @apply font-display text-4xl font-semibold tracking-normal text-zinc-950 dark:text-ink-100;
 }
