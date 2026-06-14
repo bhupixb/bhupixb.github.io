@@ -1,6 +1,7 @@
 ---
 title: "Debloating My Mi TV and Replacing Home with a minimal Home Screen using Codex"
 summary: "How I cleaned up a slow Mi TV, removed recommendations, and ended up with a tiny launcher for Live TV, YouTube, Wi-Fi, and Settings."
+image: "./minimal-launcher.png"
 date: "June 14 2026"
 draft: false
 tags:

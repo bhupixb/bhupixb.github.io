@@ -31,6 +31,12 @@ export const SEARCH: Page = {
   DESCRIPTION: "Search all posts and projects by keyword.",
 }
 
+// Interactive Page
+export const INTERACTIVE: Page = {
+  TITLE: "Interactive",
+  DESCRIPTION: "Small interactive learning pages for software engineering topics.",
+}
+
 // Links
 export const LINKS: Links = [
   { 
@@ -84,4 +90,3 @@ export const SOCIALS: Socials = [
     HREF: "https://not-afraid.medium.com/",
   },
 ]
-

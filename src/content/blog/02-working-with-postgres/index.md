@@ -1,6 +1,7 @@
 ---
 title: "All things PostgreSQL"
 summary: "A set of tools, articles that make working with PostgreSQL easier."
+image: "./postgres-app.png"
 date: "Sep 24 2024"
 draft: false
 tags:

@@ -1,6 +1,7 @@
 ---
 title: "Mitm Proxy for Backend or Frontend Developers"
 summary: "A quick summary on how I use Mitm Proxy for my daily development"
+image: "./mitmproxy.png"
 date: "Feb 13 2025"
 draft: false
 tags:
