@@ -2,7 +2,7 @@
 title: "Redis RESP Protocol"
 summary: "A short note on why Redis RESP is simple to parse."
 date: "June 22 2026"
-draft: true
+draft: false
 tags:
 - Redis
 - Protocols
@@ -12,7 +12,7 @@ I was reading through the [Redis protocol spec](https://redis.io/docs/latest/dev
 
 Redis clients and servers talk over RESP (Redis Serialization Protocol). It is a wire protocol, the format two programs use to exchange data over a network. The client sends commands in RESP, the server replies in RESP.
 
-Let's try to understand it with a new data types:
+Let's try to understand it with a few data types:
 
 ### Basic rules
 
@@ -80,7 +80,7 @@ use the same encoding rules.
 Redis clients send commands as arrays of bulk strings. `SET name vicky` becomes:
 
 ```text
-*3\r\n$3\r\nSET\r\n$4\r\nname\r\n$7\r\nbhupesh\r\n
+*3\r\n$3\r\nSET\r\n$4\r\nname\r\n$7\r\nvicky\r\n
 ```
 
 Broken down:
