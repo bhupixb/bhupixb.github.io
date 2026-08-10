@@ -1,10 +1,13 @@
 ---
+
 title: "Postgres SELECT FOR UPDATE"
 summary: "A short note on row locking with SELECT FOR UPDATE and SKIP LOCKED."
 date: "August 10 2026"
 draft: false
 tags:
+
 - PostgreSQL
+
 ---
 
 Recently I worked on a few things that required some kind of locking in order
@@ -20,7 +23,7 @@ In my case different tasks required synchronization/locking/coordination at diff
 I explored a few options including:
 
 1. [PG advisory locks](https://www.postgresql.org/docs/current/explicit-locking.html#ADVISORY-LOCKS).
-2. Locking specific row(s): via [`SELECT ... FOR UPDATE`](https://www.postgresql.org/docs/current/explicit-locking.html#LOCKING-ROWS).
+2. Locking specific row(s): via `[SELECT ... FOR UPDATE](https://www.postgresql.org/docs/current/explicit-locking.html#LOCKING-ROWS)`.
 3. Or using a stricter transaction isolation level e.g. REPEATABLE READ or SERIALIZABLE isolation depending on usage.
 
 In this post, we'll discuss (2) i.e. `SELECT ... FOR UPDATE` and its variations.
@@ -77,12 +80,49 @@ Comes `SKIP LOCKED` to the rescue (`SELECT ... FOR UPDATE SKIP LOCKED`).
 As the name says, it will skip rows that are already locked. This allows each worker
 to concurrently fetch a disjoint set of rows safely. This is also used in [pgmq](https://github.com/pgmq/pgmq/blob/main/docs/fifo-queues.md?plain=1#L123).
 
+### Showtime: does SKIP LOCKED actually help?
+
+I ran a small drain benchmark to check.
+
+Setup: insert 1M pending rows, then 4 workers each pick batches of 50 until the table is empty. Same run with and without `SKIP LOCKED`, and with and without `ORDER BY id`.
+
+Without `ORDER BY`:
+
+
+| mode                     | time   | rows/s | p90   | p99   | p99.99 | avg   |
+| ------------------------ | ------ | ------ | ----- | ----- | ------ | ----- |
+| `FOR UPDATE`             | 6.209s | 161063 | 1.4ms | 4.6ms | 46.5ms | 1.2ms |
+| `FOR UPDATE SKIP LOCKED` | 5.13s  | 194915 | 1.4ms | 1.8ms | 2.5ms  | 1ms   |
+
+
+`SKIP LOCKED` was about **1.21x** faster wall-time. The interesting part is the tail: p99 ~**2.6x**, p99.99 ~**19x**.
+
+With `ORDER BY id`:
+
+
+| mode                     | time  | rows/s | p90   | p99   | p99.99 | avg   |
+| ------------------------ | ----- | ------ | ----- | ----- | ------ | ----- |
+| `FOR UPDATE`             | 6.42s | 155759 | 1.4ms | 6.6ms | 52.3ms | 1.3ms |
+| `FOR UPDATE SKIP LOCKED` | 5.13s | 194917 | 1.4ms | 1.8ms | 10.1ms | 1ms   |
+
+
+Same story: ~**1.25x** wall-time, p99 ~**3.8x**, p99.99 ~**5.2x**.
+
+What I take away from this:
+
+1. Avg/p90 barely moves. Most batches are fine either way. The pain shows up in the tail — those spikes are workers waiting on the same locked rows.
+2. `ORDER BY id` makes plain `FOR UPDATE` a bit worse. All workers race for the same lowest ids first, so contention is more concentrated. That matches the lock-contention story above.
+3. `SKIP LOCKED` keeps workers busy on different rows instead of sitting in line. Wall-time improves a bit; latency tails improve a lot.
+4. Even with `SKIP LOCKED`, `ORDER BY` still costs something on the far tail (p99.99 10.1ms vs 2.5ms without it). Ordering is useful when you care about FIFO-ish pickup; skip it when you just want max drain throughput.
+5. Zero deadlocks in all four runs. 
+
 ### When to use SELECT ... FOR UPDATE
 
 - When you need to fetch a certain number of rows concurrently like in a job processing queue.
 - Locking one or more rows to prevent them from concurrent modification/deletion.
 
 Be very conscious that you do not end up:
+
 1. locking lots of rows.
 2. locking a small number of rows that are being accessed concurrently in the same path, as that will lead to lots of lock contention.
 3. locking the rows in a long running transaction.
@@ -113,5 +153,6 @@ Until next time.
 
 ### References
 
-- https://www.postgresql.org/docs/current/explicit-locking.html#LOCKING-ROWS
-- https://github.com/pgmq/pgmq
+- [https://www.postgresql.org/docs/current/explicit-locking.html#LOCKING-ROWS](https://www.postgresql.org/docs/current/explicit-locking.html#LOCKING-ROWS)
+- [https://github.com/pgmq/pgmq](https://github.com/pgmq/pgmq)
+
