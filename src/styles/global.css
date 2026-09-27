@@ -332,6 +332,21 @@ footer p {
   margin: 0.4rem 0;
 }
 
+.quip {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.quip a {
+  margin-left: 0.35rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.quip a:hover {
+  text-shadow: 0 0 8px var(--accent);
+}
+
 .socials {
   display: flex;
   flex-wrap: wrap;

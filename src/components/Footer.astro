@@ -1,5 +1,16 @@
 ---
 import { SITE, SOCIALS } from "@consts"
+
+const QUIPS = [
+  "not afraid to deploy on a friday",
+  "not afraid to break prod",
+  "not afraid to git push --force (on my own branch)",
+]
+
+// Seed picked so Home, Blog and Work each land on a different line.
+const hash = [...Astro.url.pathname.replace(/\/$/, "")].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 150)
+const quip = QUIPS[hash % QUIPS.length]
+const nod = "A nod to Eminem's “Not Afraid”"
 ---
 
 <footer>
@@ -10,6 +21,10 @@ import { SITE, SOCIALS } from "@consts"
       </a>
     ))}
     <a href="/rss.xml">RSS</a>
+  </p>
+  <p class="quip">
+    // {quip}
+    <a href="https://www.youtube.com/watch?v=j5-yKhDd64s" title={nod} aria-label={nod} rel="noreferrer">♪</a>
   </p>
   <p>&copy; {new Date().getFullYear()} {SITE.AUTHOR}</p>
 </footer>
