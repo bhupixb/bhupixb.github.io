@@ -24,7 +24,7 @@ jobs:
         uses: withastro/action@v3
         with:
           path: . # The root location of your Astro project inside the repository. (optional)
-          node-version: 22.13.1 # Use a Node version compatible with current pnpm and newer built-in modules.
+          node-version: 22.20.0 # Astro 7's font tooling depends on undici, which requires Node >= 22.19.
           package-manager: npm # Use the checked-in package-lock and avoid pnpm/node compatibility issues in CI.
 
   deploy:

@@ -1,10 +1,19 @@
 # bhupixb.github.io
 
-Personal site and blog built with [Astro](https://astro.build/), based on the Astro Sphere theme.
+Personal site and blog built with [Astro](https://astro.build/). Minimal, Bearblog-style: plain Astro components and one stylesheet, no CSS framework or client-side UI library.
+
+## Where Things Live
+
+- Home page bio: `src/content/home.md`
+- Blog posts: `src/content/blog/<slug>/index.md` (images next to the post)
+- Work history: `src/content/work/*.md`
+- Projects: `src/content/projects/<slug>/index.md`
+- Nav links, socials, site title: `src/consts.ts`
+- Styles (light and dark themes): `src/styles/global.css`
 
 ## Requirements
 
-- Node.js `22.13.1` or newer
+- Node.js `22.20.0` or newer
 - npm, using the committed `package-lock.json`
 
 If you use `nvm`, run:

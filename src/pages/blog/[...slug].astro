@@ -1,50 +1,22 @@
 ---
-import { type CollectionEntry, getCollection } from "astro:content"
-import PageLayout from "@layouts/PageLayout.astro"
-import TopLayout from "@layouts/TopLayout.astro"
-import BottomLayout from "@layouts/BottomLayout.astro"
-import ArticleTopLayout from "@layouts/ArticleTopLayout.astro"
-import ArticleBottomLayout from "@layouts/ArticleBottomLayout.astro"
+import { type CollectionEntry, render } from "astro:content"
+import EntryLayout from "@layouts/EntryLayout.astro"
+import { getPublished } from "@lib/content"
 
-const postImages = import.meta.glob<{ default: ImageMetadata }>(
-	"/src/content/blog/**/*.{jpeg,jpg,png,webp}",
-	{ eager: true }
-)
-
-function getPostImage(post: CollectionEntry<"blog">) {
-	const image = post.data.image
-	if (!image) return "/open-graph.jpg"
-
-	const imagePath = image.startsWith("./") ? image.slice(2) : image
-	const imageModule = postImages[`/src/content/blog/${post.slug}/${imagePath}`]
-	return imageModule?.default.src ?? image
-}
-
-// Create the static blog pages
 export async function getStaticPaths() {
-	const posts = await getCollection("blog")
-	return posts.map((post) => ({
-		params: { slug: post.slug },
-		props: post,
-	}))
+  const posts = await getPublished("blog")
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: post,
+  }))
 }
 
-// Get the requested post
 type Props = CollectionEntry<"blog">
+
 const post = Astro.props
-const { title, summary } = post.data
-const image = getPostImage(post)
+const { Content } = await render(post)
 ---
 
-<PageLayout title={title} description={summary} image={image} type="article">
-  <TopLayout>
-    <div class="animate">
-      <ArticleTopLayout entry={post}/>
-    </div>
-  </TopLayout>
-  <BottomLayout>
-    <div class="animate">
-      <ArticleBottomLayout entry={post} />
-    </div>
-  </BottomLayout>
-</PageLayout>
+<EntryLayout {...post.data} body={post.body} image={post.data.image?.src} backHref="/blog" backText="All posts">
+  <Content />
+</EntryLayout>
