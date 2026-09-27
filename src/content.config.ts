@@ -1,21 +1,23 @@
-import { defineCollection, z } from "astro:content"
+import { defineCollection } from "astro:content"
+import { glob } from "astro/loaders"
+import { z } from "astro/zod"
 
 const work = defineCollection({
-  type: "content",
+  loader: glob({ base: "./src/content/work", pattern: "**/*.md" }),
   schema: z.object({
     company: z.string(),
-    role: z.string(),
+    role: z.string().optional(),
     dateStart: z.coerce.date(),
     dateEnd: z.union([z.coerce.date(), z.string()]),
   }),
 })
 
 const blog = defineCollection({
-  type: "content",
-  schema: z.object({
+  loader: glob({ base: "./src/content/blog", pattern: "**/*.{md,mdx}" }),
+  schema: ({ image }) => z.object({
     title: z.string(),
     summary: z.string(),
-    image: z.string().optional(),
+    image: image().optional(),
     date: z.coerce.date(),
     tags: z.array(z.string()),
     draft: z.boolean().optional(),
@@ -23,7 +25,7 @@ const blog = defineCollection({
 })
 
 const projects = defineCollection({
-  type: "content",
+  loader: glob({ base: "./src/content/projects", pattern: "**/*.{md,mdx}" }),
   schema: z.object({
     title: z.string(),
     summary: z.string(),
@@ -35,12 +37,4 @@ const projects = defineCollection({
   }),
 })
 
-const legal = defineCollection({
-  type: "content",
-  schema: z.object({
-    title: z.string(),
-    date: z.coerce.date(),
-  }),
-})
-
-export const collections = { work, blog, projects, legal }
+export const collections = { work, blog, projects }

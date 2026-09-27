@@ -1,0 +1,37 @@
+---
+import PageLayout from "@layouts/PageLayout.astro"
+import { formatDate, readingTime } from "@lib/utils"
+
+type Props = {
+  title: string
+  summary: string
+  date: Date
+  tags: string[]
+  body?: string
+  image?: string
+  backHref: string
+  backText: string
+  demoUrl?: string
+  repoUrl?: string
+}
+
+const { title, summary, date, tags, body, image, backHref, backText, demoUrl, repoUrl } = Astro.props
+---
+
+<PageLayout title={title} description={summary} image={image} type="article">
+  <article>
+    <h1>{title}</h1>
+    <p class="meta">
+      <time datetime={date.toISOString()}>{formatDate(date)}</time> · {readingTime(body)}
+      {demoUrl && <> · <a href={demoUrl}>Demo</a></>}
+      {repoUrl && <> · <a href={repoUrl}>Source</a></>}
+    </p>
+    <slot />
+  </article>
+  {tags.length > 0 && (
+    <ul class="tags">
+      {tags.map((tag) => <li>{tag}</li>)}
+    </ul>
+  )}
+  <p><a href={backHref}>&larr; {backText}</a></p>
+</PageLayout>

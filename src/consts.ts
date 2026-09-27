@@ -1,92 +1,40 @@
-import type { Site, Page, Links, Socials } from "@types"
-
-// Global
-export const SITE: Site = {
-  TITLE: "Bhupendra Yadav",
-  DESCRIPTION: "Welcome to my personal blog for developers.",
-  AUTHOR: "Bhupendra yadav",
+export type Page = {
+  TITLE: string
+  DESCRIPTION: string
 }
 
-// Work Page
+export const SITE = {
+  TITLE: "Bhupendra Yadav",
+  DESCRIPTION: "Bhupendra Yadav's blog. Notes on Postgres, backend, infrastructure and whatever I'm poking at.",
+  AUTHOR: "Bhupendra Yadav",
+}
+
 export const WORK: Page = {
   TITLE: "Work",
   DESCRIPTION: "Places I have worked as a Software Engineer.",
 }
 
-// Blog Page
 export const BLOG: Page = {
   TITLE: "Blog",
   DESCRIPTION: "Writing on topics I am passionate about in Software Engineering.",
 }
 
-// Projects Page 
 export const PROJECTS: Page = {
   TITLE: "Projects",
-  DESCRIPTION: "Recent projects I have worked on.",
+  DESCRIPTION: "Side projects I have worked on.",
 }
 
-// Search Page
-export const SEARCH: Page = {
-  TITLE: "Search",
-  DESCRIPTION: "Search all posts and projects by keyword.",
-}
-
-// Interactive Page
-export const INTERACTIVE: Page = {
-  TITLE: "Interactive",
-  DESCRIPTION: "Small interactive learning pages for software engineering topics.",
-}
-
-// Links
-export const LINKS: Links = [
-  { 
-    TEXT: "Home", 
-    HREF: "/", 
-  },
-  { 
-    TEXT: "Work", 
-    HREF: "/work", 
-  },
-  { 
-    TEXT: "Blog", 
-    HREF: "/blog", 
-  },
-  { 
-    TEXT: "Projects", 
-    HREF: "/projects", 
-  },
+export const LINKS = [
+  { TEXT: "Home", HREF: "/" },
+  { TEXT: "Blog", HREF: "/blog" },
+  { TEXT: "Work", HREF: "/work" },
+  { TEXT: "Projects", HREF: "/projects" },
 ]
 
-// Socials
-export const SOCIALS: Socials = [
-  { 
-    NAME: "Email",
-    ICON: "email", 
-    TEXT: "engineerbhupixb@gmail.com",
-    HREF: "mailto:engineerbhupixb@gmail.com",
-  },
-  { 
-    NAME: "Github",
-    ICON: "github",
-    TEXT: "bhupixb",
-    HREF: "https://github.com/bhupixb"
-  },
-  { 
-    NAME: "LinkedIn",
-    ICON: "linkedin",
-    TEXT: "bhupixb",
-    HREF: "https://www.linkedin.com/in/bhupixb/",
-  },
-  { 
-    NAME: "Twitter",
-    ICON: "twitter-x",
-    TEXT: "bhupixb",
-    HREF: "https://twitter.com/bhupixb",
-  },
-  { 
-    NAME: "Medium",
-    ICON: "medium",
-    TEXT: "not-afraid",
-    HREF: "https://not-afraid.medium.com/",
-  },
+export const SOCIALS = [
+  { NAME: "Email", HREF: "mailto:engineerbhupixb@gmail.com" },
+  { NAME: "GitHub", HREF: "https://github.com/bhupixb" },
+  { NAME: "LinkedIn", HREF: "https://www.linkedin.com/in/bhupixb/" },
+  { NAME: "Twitter", HREF: "https://twitter.com/bhupixb" },
+  { NAME: "Medium", HREF: "https://not-afraid.medium.com/" },
 ]

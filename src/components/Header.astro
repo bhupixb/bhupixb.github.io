@@ -1,103 +1,32 @@
 ---
 import { SITE, LINKS } from "@consts"
-import { cn } from "@lib/utils"
-const { pathname } = Astro.url
-const subpath = pathname.match(/[^/]+/g)
-import Container from "@components/Container.astro"
+
+const section = "/" + (Astro.url.pathname.split("/")[1] ?? "")
 ---
 
-<header id="header" class="fixed top-0 w-full h-16 z-50">
-  <Container size="xl">
-    <div class="relative h-full w-full">
-      <div class="absolute left-0 top-1/2 -translate-y-1/2 flex gap-1 font-semibold">
-        <a href="/" class="flex items-center gap-2 text-zinc-900 transition-colors duration-300 ease-in-out hover:text-sky-700 dark:text-ink-100 dark:hover:text-accent-sky">
-          <svg class="size-6 fill-current">
-            <use href="/brand.svg#brand"></use>
-          </svg>
-          <div class="font-display tracking-normal">
-            {SITE.TITLE}
-          </div>
-        </a>
-      </div>
-
-    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-      <nav class="hidden items-center justify-center gap-1 rounded-full border border-black/10 bg-white/65 p-1 text-sm shadow-sm shadow-black/5 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04] md:flex">
-        {
-          LINKS.map((LINK) => (
-            <a href={LINK.HREF} class={cn("flex h-8 items-center justify-center rounded-full px-3 font-medium transition-colors duration-300 ease-in-out", pathname === LINK.HREF || "/" + subpath?.[0] === LINK.HREF ? "bg-zinc-950 text-white dark:bg-ink-100 dark:text-ink-950" : "text-zinc-600 hover:bg-black/5 hover:text-zinc-950 dark:text-ink-300 dark:hover:bg-white/10 dark:hover:text-ink-100")}>
-              {LINK.TEXT}
-            </a>
-          ))
-        }
-      </nav>
-    </div>
-
-    <div class="buttons absolute right-0 top-1/2 -translate-y-1/2 flex gap-1">
-      <a href="/search" aria-label={`Search blog posts and projects on ${SITE.TITLE}`} class={cn("hidden md:flex", "size-9 items-center justify-center rounded-full p-2", "border border-black/10 bg-white/60 stroke-current text-zinc-700 hover:border-sky-400/50 hover:text-zinc-950", "dark:border-white/10 dark:bg-white/[0.04] dark:text-ink-300 dark:hover:border-accent-sky/50 dark:hover:text-ink-100", "transition-colors duration-300 ease-in-out", pathname === "/search" || "/" + subpath?.[0] === "/search" ? "pointer-events-none bg-zinc-950 text-white dark:bg-ink-100 dark:text-ink-950" : "")}>
-        <svg class="size-full">
-          <use href="/ui.svg#search"></use>
-        </svg>
+<header>
+  <a href="/" class="site-title">{SITE.TITLE}</a>
+  <nav>
+    {LINKS.map((link) => (
+      <a href={link.HREF} aria-current={link.HREF === section ? "page" : undefined}>
+        {link.TEXT}
       </a>
-
-      <a href="/rss.xml" target="_blank" aria-label={`Rss feed for ${SITE.TITLE}`} class={cn("hidden md:flex", "size-9 items-center justify-center rounded-full p-2", "border border-black/10 bg-white/60 stroke-current text-zinc-700 hover:border-sky-400/50 hover:text-zinc-950", "dark:border-white/10 dark:bg-white/[0.04] dark:text-ink-300 dark:hover:border-accent-sky/50 dark:hover:text-ink-100", "transition-colors duration-300 ease-in-out")}>
-        <svg class="size-full">
-          <use href="/ui.svg#rss"></use>
-        </svg>
-      </a>
-
-      <button id="header-theme-button" aria-label={`Toggle light and dark theme`} class={cn("hidden md:flex", "size-9 items-center justify-center rounded-full p-2", "border border-black/10 bg-white/60 stroke-current text-zinc-700 hover:border-sky-400/50 hover:text-zinc-950", "dark:border-white/10 dark:bg-white/[0.04] dark:text-ink-300 dark:hover:border-accent-sky/50 dark:hover:text-ink-100", "transition-colors duration-300 ease-in-out")}>
-        <svg class="size-full block dark:hidden">
-          <use href="/ui.svg#sun"></use>
-        </svg>
-        <svg class="size-full hidden dark:block">
-          <use href="/ui.svg#moon"></use>
-        </svg>
-      </button>
-
-      <button id="header-drawer-button" aria-label={`Toggle drawer open and closed`} class={cn("flex md:hidden", "size-9 items-center justify-center rounded-full p-2", "border border-black/10 bg-white/60 stroke-current text-zinc-700 hover:border-sky-400/50 hover:text-zinc-950", "dark:border-white/10 dark:bg-white/[0.04] dark:text-ink-300 dark:hover:border-accent-sky/50 dark:hover:text-ink-100", "transition-colors duration-300 ease-in-out")}>
-        <svg id="drawer-open" class="size-full">
-          <use href="/ui.svg#menu"></use>
-        </svg>
-        <svg id="drawer-close" class="size-full">
-          <use href="/ui.svg#x"></use>
-        </svg>
-      </button>
-    </div>
-  </div>
-  </Container>
+    ))}
+    <button id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+      </svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+      </svg>
+    </button>
+  </nav>
 </header>
 
-<style>
-  #header-drawer-button > #drawer-open {
-    @apply block;
-  }
-
-  #header-drawer-button > #drawer-close {
-    @apply hidden;
-  }
-
-  #header-drawer-button.open > #drawer-open {
-    @apply hidden;
-  }
-
-  #header-drawer-button.open > #drawer-close {
-    @apply block;
-  }
-</style>
-
-<script is:inline>
-  function toggleDrawer() {
-    const drawer = document.getElementById("drawer")
-    const drawerButton = document.getElementById("header-drawer-button")
-    drawer?.classList.toggle("open")
-    drawerButton?.classList.toggle("open")
-  }
-
-  function initializeDrawerButton() {
-    const drawerButton = document.getElementById("header-drawer-button")
-    drawerButton?.addEventListener("click", toggleDrawer)
-  }
-
-  document.addEventListener("astro:after-swap", initializeDrawerButton)
-  initializeDrawerButton()
+<script>
+  document.getElementById("theme-toggle")?.addEventListener("click", () => {
+    const isDark = document.documentElement.classList.toggle("dark")
+    localStorage.theme = isDark ? "dark" : "light"
+  })
 </script>
