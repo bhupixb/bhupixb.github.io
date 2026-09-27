@@ -1,12 +1,13 @@
 ---
 import { SITE, LINKS } from "@consts"
+import Logo from "@components/Logo.astro"
 
 const section = "/" + (Astro.url.pathname.split("/")[1] ?? "")
 ---
 
 <header>
   <a href="/" class="site-title">
-    <img src="/avatar.png" alt="" width="36" height="36" />
+    <Logo boot={Astro.url.pathname === "/"} />
     {SITE.TITLE}
   </a>
   <nav>

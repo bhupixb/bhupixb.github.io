@@ -26,6 +26,7 @@
   --border: #e3e3e0;
   --code-bg: #f1f1ee;
   --selection: #cfe3ff;
+  --accent: #0ea5e9;
   color-scheme: light;
 }
 
@@ -38,6 +39,7 @@ html.dark {
   --border: #2a2c30;
   --code-bg: #1d1f22;
   --selection: #274a7a;
+  --accent: #38bdf8;
   color-scheme: dark;
 }
 
@@ -203,10 +205,6 @@ header {
   font-weight: 700;
   color: var(--heading);
   text-decoration: none;
-}
-
-.site-title img {
-  border-radius: 50%;
 }
 
 nav {

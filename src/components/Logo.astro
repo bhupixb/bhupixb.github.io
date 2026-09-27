@@ -1,0 +1,86 @@
+---
+type Props = {
+  boot?: boolean
+}
+
+const { boot = false } = Astro.props
+
+const GLYPH = [
+  "X....",
+  "X....",
+  "X....",
+  "XXXX.",
+  "X...X",
+  "X.o.X",
+  "X...X",
+  "XXXX.",
+]
+
+const pixels = GLYPH.flatMap((row, y) => [...row].flatMap((c, x) => (c === "X" ? [{ x, y }] : [])))
+const coreY = GLYPH.findIndex((row) => row.includes("o"))
+const core = { x: GLYPH[coreY].indexOf("o"), y: coreY }
+---
+
+<svg class:list={["logo", { boot }]} viewBox="0 0 5 8" width="20" height="32" aria-hidden="true">
+  <defs>
+    <radialGradient id="logo-halo">
+      <stop offset="0" style="stop-color: var(--accent); stop-opacity: 0.5" />
+      <stop offset="1" style="stop-color: var(--accent); stop-opacity: 0" />
+    </radialGradient>
+  </defs>
+  <g shape-rendering="crispEdges">
+    {pixels.map(({ x, y }, i) => <rect x={x} y={y} width="1" height="1" style={`--i: ${i}`} />)}
+  </g>
+  <circle class="halo" cx={core.x + 0.5} cy={core.y + 0.5} r="1.6" fill="url(#logo-halo)" />
+  <rect class="core" x={core.x} y={core.y} width="1" height="1" shape-rendering="crispEdges" style={`--i: ${pixels.length}`} />
+</svg>
+
+<style>
+  .logo {
+    flex-shrink: 0;
+    overflow: visible;
+  }
+
+  rect {
+    fill: currentColor;
+  }
+
+  .core {
+    fill: var(--accent);
+  }
+
+  .boot rect,
+  .boot .halo {
+    animation: boot 0.2s steps(1, end) calc(var(--i, 18) * 28ms) both;
+  }
+
+  .boot .halo {
+    --i: 18;
+  }
+
+  :global(a:hover) > .logo .core,
+  :global(a:hover) > .logo .halo {
+    animation: blink 1.06s steps(1, end) infinite;
+  }
+
+  @keyframes boot {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes blink {
+    50% {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .logo * {
+      animation: none !important;
+    }
+  }
+</style>
