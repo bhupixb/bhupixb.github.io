@@ -23,7 +23,7 @@ In my case different tasks required synchronization/locking/coordination at diff
 I explored a few options including:
 
 1. [PG advisory locks](https://www.postgresql.org/docs/current/explicit-locking.html#ADVISORY-LOCKS).
-2. Locking specific row(s): via `[SELECT ... FOR UPDATE](https://www.postgresql.org/docs/current/explicit-locking.html#LOCKING-ROWS)`.
+2. Locking specific row(s): via [`SELECT ... FOR UPDATE`](https://www.postgresql.org/docs/current/explicit-locking.html#LOCKING-ROWS).
 3. Or using a stricter transaction isolation level e.g. REPEATABLE READ or SERIALIZABLE isolation depending on usage.
 
 In this post, we'll discuss (2) i.e. `SELECT ... FOR UPDATE` and its variations.
