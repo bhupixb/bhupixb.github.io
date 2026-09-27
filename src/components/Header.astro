@@ -5,7 +5,10 @@ const section = "/" + (Astro.url.pathname.split("/")[1] ?? "")
 ---
 
 <header>
-  <a href="/" class="site-title">{SITE.TITLE}</a>
+  <a href="/" class="site-title">
+    <img src="/avatar.png" alt="" width="36" height="36" />
+    {SITE.TITLE}
+  </a>
   <nav>
     {LINKS.map((link) => (
       <a href={link.HREF} aria-current={link.HREF === section ? "page" : undefined}>

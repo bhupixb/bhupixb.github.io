@@ -196,11 +196,17 @@ header {
 }
 
 .site-title {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--heading);
   text-decoration: none;
+}
+
+.site-title img {
+  border-radius: 50%;
 }
 
 nav {
