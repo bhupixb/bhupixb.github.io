@@ -15,7 +15,7 @@
 }
 
 :root {
-  --width: 720px;
+  --width: 1024px;
   --font-main: "Atkinson", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   --bg: #fdfdfc;
@@ -48,6 +48,8 @@ html.dark {
 html {
   overflow-y: scroll;
   background-color: var(--bg);
+  background-image: radial-gradient(circle at top left, rgb(56 189 248 / 0.1), transparent 34rem);
+  background-attachment: fixed;
 }
 
 body {
@@ -58,7 +60,6 @@ body {
   font-size: 1.0625rem;
   line-height: 1.65;
   color: var(--text);
-  background-color: var(--bg);
   overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
