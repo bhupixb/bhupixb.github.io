@@ -6,6 +6,7 @@ Personal site and blog built with [Astro](https://astro.build/). Minimal, Bearbl
 
 - Home page bio: `src/content/home.md`
 - Blog posts: `src/content/blog/<slug>/index.md` (images next to the post)
+- Reading links: `src/data/reading.json`
 - Work history: `src/content/work/*.md`
 - Projects: `src/content/projects/<slug>/index.md`
 - Nav links, socials, site title: `src/consts.ts`

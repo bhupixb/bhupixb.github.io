@@ -1,0 +1,215 @@
+---
+import PageLayout from "@layouts/PageLayout.astro"
+import { READING } from "@consts"
+import reading from "@data/reading.json"
+
+type ReadingType = "article" | "video" | "paper" | "docs" | "other"
+type ReadingItem = {
+  title: string
+  url: string
+  type: ReadingType
+  tags: string[]
+  dateAdded: string
+  note?: string
+  author?: string
+}
+
+const typeLabels: Record<ReadingType, string> = {
+  article: "Article",
+  video: "Video",
+  paper: "Paper",
+  docs: "Docs",
+  other: "Other",
+}
+
+const items = (reading as ReadingItem[]).sort((a, b) => b.dateAdded.localeCompare(a.dateAdded))
+const filterTags = ["backend", "databases", "security"]
+const years = [...new Set(items.map((item) => item.dateAdded.slice(0, 4)))]
+const tagLabel = (tag: string) => tag.replaceAll("-", " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
+const shortDate = (date: string) =>
+  new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(
+    new Date(`${date}T00:00:00Z`)
+  )
+---
+
+<PageLayout title={READING.TITLE} description={READING.DESCRIPTION}>
+  <h1>{READING.TITLE}</h1>
+  <p class="subtitle">{READING.DESCRIPTION}</p>
+
+  <div class="reading-controls">
+    <input id="reading-search" type="search" placeholder="Search saved links..." aria-label="Search saved links" autocomplete="off" />
+    <div class="tag-filters" role="group" aria-label="Filter by topic" data-primary-tags={JSON.stringify(filterTags)}>
+      <button type="button" data-tag="" aria-pressed="true">All</button>
+      {filterTags.map((tag) => (
+        <button type="button" data-tag={tag} aria-pressed="false">{tagLabel(tag)}</button>
+      ))}
+      <button type="button" data-tag="miscellaneous" aria-pressed="false">Miscellaneous</button>
+    </div>
+  </div>
+
+  {years.map((year) => (
+    <section class="reading-year">
+      <h2>{year}</h2>
+      <ol class="reading-list">
+        {items.filter((item) => item.dateAdded.startsWith(year)).map((item) => (
+          <li
+            class="reading-entry"
+            data-search={[item.title, ...item.tags, item.author ?? "", item.note ?? "", item.type].join(" ").toLowerCase()}
+            data-tags={JSON.stringify(item.tags)}
+          >
+            <time datetime={item.dateAdded}>{shortDate(item.dateAdded)}</time>
+            <div>
+              <a href={item.url} target="_blank" rel="noopener noreferrer">{item.title} <span aria-hidden="true">↗</span></a>
+              {(item.author || item.type !== "article") && (
+                <p class="reading-meta">
+                  {item.author}{item.author && item.type !== "article" && " · "}{item.type !== "article" && typeLabels[item.type]}
+                </p>
+              )}
+              <p class="reading-tags">{item.tags.join(" · ")}</p>
+              {item.note && <p class="reading-note">{item.note}</p>}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+  ))}
+  <p class="reading-empty" hidden>No saved links match your search and filters.</p>
+</PageLayout>
+
+<script>
+  const search = document.querySelector<HTMLInputElement>("#reading-search")
+  const tagFilters = document.querySelector<HTMLElement>(".tag-filters")
+  const primaryTags: string[] = JSON.parse(tagFilters?.dataset.primaryTags ?? "[]")
+  const tagButtons = [...document.querySelectorAll<HTMLButtonElement>(".tag-filters button")]
+  const entries = [...document.querySelectorAll<HTMLElement>(".reading-entry")]
+  const years = [...document.querySelectorAll<HTMLElement>(".reading-year")]
+  const empty = document.querySelector<HTMLElement>(".reading-empty")
+  let selectedTag = ""
+
+  function updateResults() {
+    const query = search?.value.trim().toLowerCase() ?? ""
+    let visibleCount = 0
+
+    for (const entry of entries) {
+      const tags: string[] = JSON.parse(entry.dataset.tags ?? "[]")
+      const matchesTag = !selectedTag || (selectedTag === "miscellaneous"
+        ? !tags.some((tag) => primaryTags.includes(tag))
+        : tags.includes(selectedTag))
+      const matches = (entry.dataset.search?.includes(query) ?? false) && matchesTag
+      entry.hidden = !matches
+      if (matches) visibleCount++
+    }
+
+    for (const year of years) {
+      year.hidden = !year.querySelector(".reading-entry:not([hidden])")
+    }
+    if (empty) empty.hidden = visibleCount !== 0
+  }
+
+  search?.addEventListener("input", updateResults)
+  for (const button of tagButtons) {
+    button.addEventListener("click", () => {
+      selectedTag = button.dataset.tag ?? ""
+      for (const tagButton of tagButtons) tagButton.setAttribute("aria-pressed", String(tagButton === button))
+      updateResults()
+    })
+  }
+</script>
+
+<style>
+  .reading-controls {
+    margin: 2rem 0;
+  }
+
+  #reading-search {
+    font: inherit;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    width: 100%;
+    padding: 0.45rem 0.7rem;
+  }
+
+  #reading-search::placeholder {
+    color: var(--muted);
+  }
+
+  .tag-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.15rem 0.8rem;
+    margin-top: 0.75rem;
+  }
+
+  .tag-filters button {
+    padding: 0.2rem 0;
+    border: 0;
+    color: var(--muted);
+    background: none;
+    font: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  .tag-filters button:hover,
+  .tag-filters button[aria-pressed="true"] {
+    color: var(--heading);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .reading-year h2 {
+    margin-bottom: 0.75rem;
+  }
+
+  .reading-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .reading-entry {
+    display: flex;
+    gap: 1.25rem;
+    margin-bottom: 1.1rem;
+  }
+
+  .reading-entry time {
+    width: 3.6rem;
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+
+  .reading-entry p {
+    margin: 0;
+  }
+
+  .reading-meta,
+  .reading-tags {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .reading-note {
+    font-size: 0.95rem;
+  }
+
+  .reading-entry[hidden],
+  .reading-year[hidden],
+  .reading-empty[hidden] {
+    display: none;
+  }
+
+  @media (max-width: 520px) {
+    .reading-entry {
+      display: block;
+    }
+
+    .reading-entry time {
+      display: block;
+    }
+  }
+</style>

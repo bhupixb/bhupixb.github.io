@@ -24,11 +24,17 @@ export const PROJECTS: Page = {
   DESCRIPTION: "Side projects I have worked on.",
 }
 
+export const READING: Page = {
+  TITLE: "Reading",
+  DESCRIPTION: "Articles, videos, papers and other things worth keeping.",
+}
+
 export const LINKS = [
   { TEXT: "Home", HREF: "/" },
   { TEXT: "Blog", HREF: "/blog" },
   { TEXT: "Work", HREF: "/work" },
   { TEXT: "Projects", HREF: "/projects" },
+  { TEXT: "Reading", HREF: "/reading" },
 ]
 
 export const SOCIALS = [

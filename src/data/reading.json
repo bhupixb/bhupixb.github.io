@@ -1,0 +1,184 @@
+[
+  {
+    "title": "Black Hat USA 2026 | The 'Breaking' News: The OpenAI–Hugging Face Incident",
+    "url": "https://www.youtube.com/watch?v=87DyyMV0kCY",
+    "type": "video",
+    "tags": ["security", "ai"],
+    "dateAdded": "2026-09-28"
+  },
+  {
+    "title": "PGKeeper: Building the bouncer we needed for Postgres",
+    "url": "https://www.figma.com/blog/pgkeeper-building-the-bouncer-we-needed-for-postgres/",
+    "type": "article",
+    "tags": ["backend", "databases", "postgres", "infrastructure"],
+    "dateAdded": "2026-09-28"
+  },
+  {
+    "title": "Making Postgres 42,000x slower because I am unemployed",
+    "url": "https://byteofdev.com/posts/making-postgres-slow/",
+    "type": "article",
+    "tags": ["backend", "databases", "postgres", "performance"],
+    "dateAdded": "2026-09-28"
+  },
+  {
+    "title": "What the heck is the event loop anyway?",
+    "url": "https://www.youtube.com/watch?v=8aGhZQkoFbQ",
+    "type": "video",
+    "tags": ["software-engineering", "javascript"],
+    "dateAdded": "2026-09-12",
+    "note": "A clear visual explanation of the browser event loop.",
+    "author": "Philip Roberts"
+  },
+  {
+    "title": "Postgres Queues",
+    "url": "https://brandur.org/postgres-queues",
+    "type": "article",
+    "tags": ["postgres", "backend", "databases"],
+    "dateAdded": "2025-11-19",
+    "author": "Brandur Leach"
+  },
+  {
+    "title": "Account Takeover due to Puny-code",
+    "url": "https://blog.voorivex.team/puny-code-0-click-account-takeover",
+    "type": "article",
+    "tags": ["security", "backend"],
+    "dateAdded": "2025-06-03",
+    "note": "A writeup on how Punycode can lead to account takeover."
+  },
+  {
+    "title": "Go Concurrency for beginners",
+    "url": "https://blog.cubed.run/the-cards-of-concurrency-in-go-0d7582cecb79",
+    "type": "article",
+    "tags": ["backend", "go", "concurrency"],
+    "dateAdded": "2025-06-03",
+    "note": "A beginner-friendly explanation with helpful examples."
+  },
+  {
+    "title": "Reservoir Sampling",
+    "url": "https://samwho.dev/reservoir-sampling/",
+    "type": "article",
+    "tags": ["algorithms", "software-engineering"],
+    "dateAdded": "2025-06-03",
+    "note": "Especially good visualizations of the concept."
+  },
+  {
+    "title": "User Tracking by Big Tech",
+    "url": "https://www.reddit.com/r/privacy/comments/1hzxsb0/hiding_your_ip_wont_protect_you_people_badly/",
+    "type": "other",
+    "tags": ["privacy"],
+    "dateAdded": "2025-06-03",
+    "note": "An eye-opening discussion of how large tech companies track users."
+  },
+  {
+    "title": "Javascript for Hackers",
+    "url": "https://www.youtube.com/watch?v=FTeE3OrTNoA",
+    "type": "video",
+    "tags": ["security", "backend", "javascript"],
+    "dateAdded": "2025-06-03",
+    "note": "A good watch for anyone interested in web security and backend work."
+  },
+  {
+    "title": "Dockerfile: You Don't Know CMD vs ENTRYPOINT",
+    "url": "https://kaanyagci.hashnode.dev/your-ops-team-hates-you-because-you-dont-know-cmd-vs-entrypoint",
+    "type": "article",
+    "tags": ["backend", "docker", "infrastructure"],
+    "dateAdded": "2025-05-05",
+    "note": "Explains CMD versus ENTRYPOINT and why the difference matters for graceful shutdown."
+  },
+  {
+    "title": "Docker Events",
+    "url": "https://kaanyagci.hashnode.dev/reading-docker-container-logs-is-not-debugging-its-guessing",
+    "type": "article",
+    "tags": ["backend", "docker", "observability"],
+    "dateAdded": "2025-05-05",
+    "note": "Shows how docker events can help debug containers."
+  },
+  {
+    "title": "Memory bandwidth napkin math",
+    "url": "https://www.forrestthewoods.com/blog/memory-bandwidth-napkin-math/",
+    "type": "article",
+    "tags": ["backend", "performance"],
+    "dateAdded": "2025-05-05",
+    "note": "A useful explanation of memory bandwidth limits when scaling a server."
+  },
+  {
+    "title": "Digital hygiene",
+    "url": "https://karpathy.bearblog.dev/digital-hygiene/",
+    "type": "article",
+    "tags": ["security", "privacy"],
+    "dateAdded": "2025-05-05",
+    "note": "A must-read for everyone."
+  },
+  {
+    "title": "Configure your git",
+    "url": "https://www.youtube.com/watch?v=G3NJzFX6XhY",
+    "type": "video",
+    "tags": ["git", "software-engineering"],
+    "dateAdded": "2025-05-05",
+    "note": "Good tips on Git URLs and commit templates."
+  },
+  {
+    "title": "How to hunt",
+    "url": "https://github.com/KathanP19/HowToHunt",
+    "type": "other",
+    "tags": ["security", "web"],
+    "dateAdded": "2025-05-05",
+    "note": "Methods and resources for finding web vulnerabilities."
+  },
+  {
+    "title": "The Human Side of Code Reviews - Part 1",
+    "url": "https://mtlynch.io/human-code-reviews-1/",
+    "type": "article",
+    "tags": ["code-review", "software-engineering"],
+    "dateAdded": "2025-02-13",
+    "note": "Insights into making code reviews more human-centric."
+  },
+  {
+    "title": "The Human Side of Code Reviews - Part 2",
+    "url": "https://mtlynch.io/human-code-reviews-2/",
+    "type": "article",
+    "tags": ["code-review", "software-engineering"],
+    "dateAdded": "2025-02-13",
+    "note": "More on improving the human side of code reviews."
+  },
+  {
+    "title": "Numbers",
+    "url": "https://samwho.dev/numbers",
+    "type": "article",
+    "tags": ["backend", "performance"],
+    "dateAdded": "2025-02-13",
+    "note": "Handy latency numbers for programming."
+  },
+  {
+    "title": "Programming Advice to My Younger Self",
+    "url": "https://mbuffett.com/posts/programming-advice-younger-self/",
+    "type": "article",
+    "tags": ["software-engineering", "career"],
+    "dateAdded": "2025-02-13",
+    "note": "Programming advice from an experienced developer."
+  },
+  {
+    "title": "Code Review Love",
+    "url": "https://mtlynch.io/code-review-love/#1-review-your-own-code-first",
+    "type": "article",
+    "tags": ["code-review", "software-engineering"],
+    "dateAdded": "2025-02-13",
+    "note": "Tips for improving your code review process."
+  },
+  {
+    "title": "Working Fast and Slow",
+    "url": "https://www.seangoedecke.com/working-fast-and-slow/",
+    "type": "article",
+    "tags": ["software-engineering", "productivity"],
+    "dateAdded": "2025-02-13",
+    "note": "On balancing speed and quality in software development."
+  },
+  {
+    "title": "Cognitive load in Programming",
+    "url": "https://minds.md/zakirullin/cognitive",
+    "type": "article",
+    "tags": ["software-engineering", "cognitive-load"],
+    "dateAdded": "2025-02-13",
+    "note": "A reminder that cognitive load matters."
+  }
+]
