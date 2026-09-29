@@ -1,16 +1,12 @@
 \set ON_ERROR_STOP on
-
-DROP TABLE IF EXISTS serializable_accounts;
-
-CREATE TABLE serializable_accounts (
+-- Use a fresh test database. This intentionally does not drop an existing table.
+CREATE TABLE accounts (
     id INT PRIMARY KEY,
-    external_id INT NOT NULL,
     name TEXT NOT NULL,
     balance INT NOT NULL
 );
-
-INSERT INTO serializable_accounts(id, external_id, name, balance)
-SELECT i, 10000 + i, 'user-' || i, 1000
+INSERT INTO accounts(id, name, balance)
+SELECT i, 'user-' || i,
+       CASE i WHEN 1 THEN 1100 WHEN 2 THEN 321 ELSE 1000 END
 FROM generate_series(1, 100) AS g(i);
-
-ANALYZE serializable_accounts;
+ANALYZE accounts;

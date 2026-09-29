@@ -15,7 +15,10 @@ send_sql() {
   "${tmux_cmd[@]}" send-keys -t "$target" C-m
 }
 
-psql -X -d exp -U ybcloud -v ON_ERROR_STOP=1 -f setup.sql >/dev/null
+# Run setup.sql once in a fresh test database before recording.
+# Reset only the two example balances; do not recreate an existing table.
+psql -X -d exp -U ybcloud -v ON_ERROR_STOP=1 -c \
+  "UPDATE accounts SET balance=CASE id WHEN 1 THEN 1100 ELSE 321 END WHERE id IN (1,2);" >/dev/null
 "${tmux_cmd[@]}" kill-server 2>/dev/null || true
 "${tmux_cmd[@]}" new-session -d -s "$session_name" -x 120 -y 24 "$connection"
 "${tmux_cmd[@]}" split-window -h -t "$session_name":0 "$connection"
@@ -29,15 +32,15 @@ psql -X -d exp -U ybcloud -v ON_ERROR_STOP=1 -f setup.sql >/dev/null
   sleep 1
   send_sql "$session_name":0.0 "BEGIN ISOLATION LEVEL SERIALIZABLE;"
   sleep 0.7
-  send_sql "$session_name":0.0 "SELECT count(*), sum(balance) FROM serializable_accounts;"
+  send_sql "$session_name":0.0 "SELECT * FROM accounts WHERE name='user-1';"
   sleep 1
   send_sql "$session_name":0.1 "BEGIN ISOLATION LEVEL SERIALIZABLE;"
   sleep 0.7
-  send_sql "$session_name":0.1 "SELECT count(*), sum(balance) FROM serializable_accounts;"
+  send_sql "$session_name":0.1 "SELECT * FROM accounts WHERE name='user-2';"
   sleep 1
-  send_sql "$session_name":0.0 "UPDATE serializable_accounts SET balance=balance+10 WHERE id=1;"
+  send_sql "$session_name":0.0 "UPDATE accounts SET balance=111 WHERE id=1;"
   sleep 1
-  send_sql "$session_name":0.1 "UPDATE serializable_accounts SET balance=balance+20 WHERE id=2;"
+  send_sql "$session_name":0.1 "UPDATE accounts SET balance=123 WHERE id=2;"
   sleep 1
   send_sql "$session_name":0.0 "COMMIT;"
   sleep 1

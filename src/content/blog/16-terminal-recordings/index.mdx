@@ -1,0 +1,48 @@
+---
+title: "Testing terminal recordings"
+summary: "A visual test of lightweight, interactive terminal recordings embedded in an Astro article."
+date: "September 29 2026"
+draft: true
+tags:
+
+- PostgreSQL
+
+---
+
+import AsciinemaPlayer from "@components/AsciinemaPlayer.astro"
+
+This is a layout test for interactive terminal recordings. Unlike a video, the text in
+these players stays sharp, can be selected, and requires only a small text-based `.cast`
+file.
+
+The sessions below are hand-authored demo fixtures. Their rows and query plans are
+illustrative, not output captured from a real database.
+
+### Connect and select one row
+
+Press play to watch a short `psql` session.
+
+<AsciinemaPlayer src="/casts/psql-select.cast" rows={12} poster="npt:0:03" />
+
+### Run a transaction
+
+Players can appear between ordinary Markdown paragraphs and code blocks.
+
+<AsciinemaPlayer src="/casts/psql-transaction.cast" rows={12} poster="npt:0:03" speed={1.25} />
+
+### Inspect a query plan
+
+This final example loops so the playback controls and repeated animation can be tested.
+
+<AsciinemaPlayer src="/casts/psql-explain.cast" rows={14} poster="npt:0:03" loop />
+
+### Watch one transaction block another
+
+Both sessions update the same row. Session 1 acquires the row lock first, so Session 2's
+`UPDATE` produces no result while it waits. As soon as Session 1 commits, Session 2
+acquires the lock and prints `UPDATE 1`.
+
+<AsciinemaPlayer src="/casts/psql-row-lock.cast" cols={110} rows={15} poster="npt:0:05" />
+
+The recordings are served as static assets by Astro, while the browser renders them with
+the Asciinema web player.
