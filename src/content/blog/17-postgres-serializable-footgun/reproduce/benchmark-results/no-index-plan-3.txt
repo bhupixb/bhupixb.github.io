@@ -1,0 +1,2 @@
+Seq Scan on serializable_accounts
+  Filter: (external_id = 10001)

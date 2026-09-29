@@ -1,0 +1,21 @@
+pgbench (18.4 (Homebrew), server 17.11 (Postgres.app))
+transaction type: transaction.sql
+scaling factor: 1
+query mode: simple
+number of clients: 8
+number of threads: 8
+maximum number of tries: 1
+duration: 10 s
+number of transactions actually processed: 12465
+number of failed transactions: 76957 (86.060%)
+number of serialization failures: 76957 (86.060%)
+number of deadlock failures: 0 (0.000%)
+latency average = 0.889 ms (including failures)
+initial connection time = 60.793 ms
+tps = 1253.861420 (without initial connection time)
+statement latencies in milliseconds and failures:
+         0.000           0 \set target_external_id 10001 + :client_id
+         0.039           0 BEGIN ISOLATION LEVEL SERIALIZABLE;
+         0.419           0 SELECT balance AS old_balance
+         0.351       74296 UPDATE serializable_accounts
+         0.035        2657 COMMIT;

@@ -1,0 +1,26 @@
+Server: PostgreSQL 17.11 (Postgres.app)
+Client: pgbench 18.4 (Homebrew)
+Clients: 8
+Threads: 8
+Duration per run: 10 seconds
+
+No index, maximum 1 try
+run  successful_tps  serialization_failure_rate  average_latency_ms
+1    1253.861420    86.060%                     0.889
+2    1233.014749    86.295%                     0.889
+3    1226.163080    86.102%                     0.907
+median 1233.014749   86.102%                     0.889
+
+Index, maximum 1 try
+run  successful_tps  serialization_failure_rate  average_latency_ms
+1    42390.278653   0.005%                      0.189
+2    42475.120255   0.008%                      0.188
+3    42549.716232   0.005%                      0.188
+median 42475.120255  0.005%                      0.188
+
+No index, maximum 10 tries
+successful_tps: 1229.606794
+serialization_failure_rate_after_10_tries: 30.290%
+transactions_retried_at_least_once: 62.825%
+total_retries: 71211
+average_latency_ms: 4.535

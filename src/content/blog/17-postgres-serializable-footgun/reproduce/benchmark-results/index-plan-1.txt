@@ -1,0 +1,2 @@
+Index Scan using serializable_accounts_external_id_idx on serializable_accounts
+  Index Cond: (external_id = 10001)

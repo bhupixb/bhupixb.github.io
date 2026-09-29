@@ -1,0 +1,59 @@
+---
+import "asciinema-player/dist/bundle/asciinema-player.css"
+
+type Props = {
+  src: string
+  cols?: number
+  rows?: number
+  autoplay?: boolean
+  loop?: boolean | number
+  speed?: number
+  theme?: string
+  poster?: string
+}
+
+const {
+  src,
+  cols,
+  rows,
+  autoplay = false,
+  loop = false,
+  speed = 1,
+  theme = "asciinema",
+  poster = "npt:0:01",
+} = Astro.props
+
+const options = { cols, rows, autoplay, loop, speed, theme, poster }
+---
+
+<div
+  class="terminal-recording"
+  data-asciinema-player
+  data-src={src}
+  data-options={JSON.stringify(options)}
+>
+  <noscript><a href={src}>Download the terminal recording</a></noscript>
+</div>
+
+<script>
+  import * as AsciinemaPlayer from "asciinema-player"
+
+  document.querySelectorAll<HTMLElement>("[data-asciinema-player]:not([data-mounted])").forEach((container) => {
+    const src = container.dataset.src
+
+    if (!src) return
+
+    const options = JSON.parse(container.dataset.options ?? "{}")
+    AsciinemaPlayer.create(src, container, options)
+    container.dataset.mounted = "true"
+  })
+</script>
+
+<style>
+  .terminal-recording {
+    max-width: 100%;
+    margin: 1.5rem 0;
+    overflow: hidden;
+    border-radius: 6px;
+  }
+</style>

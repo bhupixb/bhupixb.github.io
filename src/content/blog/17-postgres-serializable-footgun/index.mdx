@@ -1,0 +1,252 @@
+---
+title: "Postgres SERIALIZABLE: Why different rows can still conflict"
+summary: "I used SERIALIZABLE to prevent a race condition. Then requests for different resource IDs started failing. A sequential scan helped explain why."
+date: "September 29 2026"
+draft: false
+tags:
+
+- PostgreSQL
+
+---
+
+import AsciinemaPlayer from "@components/AsciinemaPlayer.astro"
+
+In my [last post on SELECT FOR UPDATE](/blog/14-postgres-select-for-update/), I wrote about using row locks to prevent race conditions.
+
+Recently, I worked on another problem where concurrent API calls for the same `resourceID` could cause a race condition. The flow touched about 12 tables. 
+
+### Comes SERIALIZABLE transaction isolation
+
+For this case, using `SERIALIZABLE` isolation looked simpler than working out which rows to lock across all those tables.
+
+> The Serializable isolation level provides the strictest transaction isolation. This level emulates serial transaction execution for all committed transactions; as if transactions had been executed one after another, serially, rather than concurrently.
+
+With `SERIALIZABLE`, the transactions that commit must produce a result that could have come from running them one after another.
+
+Postgres still runs the transactions concurrently. Each transaction gets a stable view of the data, and Postgres checks how its reads and writes interact with other transactions. If it finds a possible serialization problem, it aborts a transaction. The application then needs to retry it.
+
+This is called Serializable Snapshot Isolation, or SSI. You can start a transaction like this:
+
+```sql
+BEGIN ISOLATION LEVEL SERIALIZABLE;
+
+-- Read the data and make changes based on it.
+
+COMMIT;
+```
+
+I expected concurrent calls for the same resource to conflict. What surprised me was seeing failures for different resources.
+
+### What happened
+
+I wrapped the flow in a SERIALIZABLE transaction and tested concurrent calls for the same resource ID locally. One succeeded and one failed, as expected. I added unit tests and deployed the change to staging.
+
+Then our full integration suite ran. Some tests failed with this error:
+
+```text
+ERROR:  could not serialize access due to read/write dependencies among transactions
+DETAIL:  Reason code: Canceled on identification as a pivot, during commit attempt.
+HINT:  The transaction might succeed if retried.
+```
+
+I looked at the tests and my change. The tests modified separate sets of rows. They weren't trying to update the same resource, so I couldn't see why they conflicted.
+
+At this point I wanted to figure it out myself. I wrote a smaller test that made two concurrent calls with different resource IDs. That reproduced the failure.
+
+I started commenting out one database query at a time and running the test again. After a few runs, I found that removing one SELECT made the test pass.
+
+I checked that query with `EXPLAIN ANALYZE`. It used a sequential scan.
+
+That was the clue I was missing. I gave the observations to AI to help explain what Postgres was doing. Then I ran a few small SQL experiments to check the explanation.
+
+### What the SELECT was doing
+
+A SERIALIZABLE transaction can take predicate locks on tuples, pages, or an entire table. They appear in `pg_locks` as `SIReadLock`.
+
+A sequential scan takes a predicate lock covering the whole table. Even a query with a `WHERE` clause can do this if its plan is a sequential scan.
+
+To see it, I kept the transaction open after the SELECT and ran this query in another terminal:
+
+```sql
+SELECT
+    pid,
+    relation::regclass AS relation,
+    locktype,
+    page,
+    tuple,
+    mode
+FROM pg_locks
+WHERE mode = 'SIReadLock'
+ORDER BY pid, relation::regclass::text, locktype, page, tuple;
+```
+
+For the sequential scan, the predicate lock looked like this. I've left out the PID here:
+
+```text
+       relation        | locktype | page | tuple |    mode
+-----------------------+----------+------+-------+------------
+ serializable_accounts | relation |      |       | SIReadLock
+```
+
+`locktype = relation` means the lock covers the table. Postgres uses it to track writes that might conflict with the transaction's read.
+
+The word "lock" confused me here. This particular lock does not make UPDATE or INSERT wait. It records a read for SSI. The [Postgres documentation](https://www.postgresql.org/docs/17/transaction-iso.html#XACT-SERIALIZABLE) explains that these locks do not cause blocking.
+
+A write can finish and the transaction can still fail later, including at COMMIT. I wanted to see that happen with two terminals.
+
+### A small test with different rows
+
+I used PostgreSQL 17.11 and a table with 100 rows:
+
+```sql
+CREATE TABLE serializable_accounts (
+    id INT PRIMARY KEY,
+    name TEXT NOT NULL,
+    balance INT NOT NULL
+);
+
+INSERT INTO serializable_accounts(id, name, balance)
+SELECT i, 'user-' || i, 1000
+FROM generate_series(1, 100) AS g(i);
+
+ANALYZE serializable_accounts;
+```
+
+First, run this in both terminals. Don't run either UPDATE yet:
+
+```sql
+BEGIN ISOLATION LEVEL SERIALIZABLE;
+
+SET LOCAL enable_indexscan = off;
+SET LOCAL enable_bitmapscan = off;
+
+EXPLAIN (COSTS OFF)
+SELECT count(*), sum(balance) FROM serializable_accounts;
+
+SELECT count(*), sum(balance) FROM serializable_accounts;
+```
+
+The plan contains a `Seq Scan`. Both sessions read 100 rows with a total balance of 100000. I disabled index scans here just to make the test plan predictable.
+
+Now update row 1 in Session 1:
+
+```sql
+UPDATE serializable_accounts
+SET balance = balance + 10
+WHERE id = 1;
+-- UPDATE 1
+```
+
+Before committing, update row 2 in Session 2:
+
+```sql
+UPDATE serializable_accounts
+SET balance = balance + 20
+WHERE id = 2;
+-- UPDATE 1
+```
+
+Both updates completed without waiting. I also checked for blockers:
+
+```sql
+SELECT pid, application_name, pg_blocking_pids(pid) AS blocked_by
+FROM pg_stat_activity
+WHERE datname = current_database();
+```
+
+Both test sessions had an empty `blocked_by` array: `{}`.
+
+I ran `COMMIT;` in Session 1. It succeeded. Then I ran `COMMIT;` in Session 2 and got the read/write dependency error shown earlier.
+
+This recording shows the same sequence on my local database:
+
+<AsciinemaPlayer src="/casts/psql-serializable-failure.cast" rows={24} poster="npt:0:04" />
+
+Each transaction had read the row that the other transaction later changed. If Session 1 had run first, Session 2 would have read its new balance. If Session 2 had run first, Session 1 would have read its new balance. But both read the old balances. There was no serial order that could explain both reads, so Postgres aborted one transaction.
+
+The example deliberately reads every row. In my application, the query asked for a smaller set, but the sequential scan still took a predicate lock on the whole table. That coarse lock can make writes to unrelated rows count as conflicts too. Different resource IDs alone don't prevent this.
+
+A single full scan does not mean every concurrent writer must fail. The failure depends on the reads and writes across the overlapping transactions. For example, in a separate test I left a full scan open, updated a row from another transaction, and both transactions committed successfully. The reader did no writes in that test.
+
+### The fix: check the plan and the index
+
+For a query that only needs one resource, I want Postgres to be able to find that resource through an index.
+
+For example, if the lookup uses `external_id`, the index needs to support that lookup. An index on `id` alone doesn't help:
+
+```sql
+ALTER TABLE serializable_accounts ADD COLUMN external_id INT;
+UPDATE serializable_accounts SET external_id = 10000 + id;
+
+CREATE INDEX serializable_accounts_external_id_idx
+ON serializable_accounts(external_id);
+
+ANALYZE serializable_accounts;
+
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT balance
+FROM serializable_accounts
+WHERE external_id = 10001;
+```
+
+Adding the index is only part of the check. I also need to see which plan Postgres chooses.
+
+I compared the locks with a separate, selective primary-key lookup. In a fresh transaction, I used `enable_seqscan = off` to encourage the index plan for this test:
+
+```sql
+BEGIN ISOLATION LEVEL SERIALIZABLE;
+SET LOCAL enable_seqscan = off;
+
+EXPLAIN (COSTS OFF)
+SELECT * FROM serializable_accounts WHERE id = 1;
+
+SELECT * FROM serializable_accounts WHERE id = 1;
+-- Leave this transaction open and inspect pg_locks from another session.
+```
+
+The plan was an `Index Scan`. The predicate locks from that run were:
+
+```text
+          relation          | locktype | page | tuple |    mode
+----------------------------+----------+------+-------+------------
+ serializable_accounts_pkey  | page     |    1 |       | SIReadLock
+ serializable_accounts       | tuple    |    0 |   101 | SIReadLock
+```
+
+There was a lock on an index page and a lock on the matching table tuple. There was no relation-level `SIReadLock`. The page and tuple numbers can differ when you run this.
+
+Both scans also took normal `AccessShareLock`s. Those locks are compatible with the `RowExclusiveLock` used by UPDATE and INSERT. Seeing `locktype = relation` by itself isn't enough; check `mode` too.
+
+After inspecting the locks, finish the test transaction with `ROLLBACK;`. I wouldn't turn off sequential scans globally to fix this. The setting above is just for comparing the two plans.
+
+I also ran a small benchmark with eight clients. Each client read and updated its own `external_id`, so they never updated the same row. I used 10,000 rows, ran each case for ten seconds, and repeated it three times.
+
+These are the medians with retries disabled:
+
+| Plan | Successful transactions/second | Serialization failures |
+| --- | ---: | ---: |
+| Sequential scan, no index | 1,233 | 86.102% |
+| Index scan | 42,475 | 0.005% |
+
+The index made the queries faster too, so this doesn't measure only the cost of serialization failures. But the drop in failures showed why the scan mattered. The indexed case still had a few failures.
+
+The application must handle SQLSTATE `40001` either way. Retry the whole transaction with a fresh snapshot, including the reads and decisions based on them. Retrying only COMMIT isn't enough. Use a retry limit and a short randomized delay, and keep the transaction as short as the work allows.
+
+### An index doesn't guarantee an index scan
+
+I ran into this while setting up the benchmark. I started with 100 rows and added an index. Postgres still chose a sequential scan.
+
+For such a small table, reading the whole table can cost less than going through the index. After I increased the benchmark to 10,000 rows, the lookup used an index scan in each run. So a small test database can behave differently from a larger database even with the same indexes.
+
+There are other reasons Postgres can choose a sequential scan:
+
+- The query reads most of the table. For example, `SELECT * FROM serializable_accounts` has no filter. An index doesn't make that a narrow read.
+- The condition matches many rows. Reading them through an index may cost more than scanning the table once.
+- The index doesn't support the query's expression. An ordinary index on `name` generally won't support a lookup on `lower(name)`; that needs an appropriate expression index.
+- The planner's estimates are wrong. Stale statistics can affect its choice, so compare estimated and actual row counts in `EXPLAIN ANALYZE` and check whether `ANALYZE` is needed.
+
+The [EXPLAIN documentation](https://www.postgresql.org/docs/17/using-explain.html) has examples of how those cost estimates affect the plan. The thing to check is the plan for your actual query and data, not just whether an index exists.
+
+Even with an index scan, predicate locks can cover more than one logical row. An index page can cover several keys. Postgres can also combine smaller predicate locks into page or relation locks to limit tracking overhead. The [predicate lock settings](https://www.postgresql.org/docs/17/runtime-config-locks.html) control when that happens.
+
+For my tests, checking that the requests used different resource IDs wasn't enough. I also needed to check what the SELECT actually scanned. I'll now check the plan and `pg_locks` when a SERIALIZABLE transaction fails on rows that look unrelated.
