@@ -1,6 +1,6 @@
 ---
-title: "We made CI faster by doing less"
-summary: "We cut test setup by about one second per test and removed shared library compilation from three CI jobs."
+title: "How I made CI 35% faster by doing less"
+summary: "I cut test setup by about one second per test and removed shared library compilation from three CI jobs."
 date: "October 7 2026"
 draft: false
 tags:
@@ -11,13 +11,13 @@ tags:
 
 I wanted less waiting between a code change and its CI result. I found repeated work in two places: test setup and shared library builds.
 
-**Our CI got faster when we stopped repeating work.**
+**CI got faster when I stopped repeating work.**
 
 ### Making test setup faster
 
-Our suite had about **2,800 tests in total**. They ran in **four separate Java processes** (JVM forks) in parallel.
+The suite had about **2,800 tests in total**. They ran in **four separate Java processes** (JVM forks) in parallel.
 
-These were full application tests that called the actual HTTP server. Before each test, we truncated the Postgres tables and started the application. Other setup included user creation, generated account history, and service logins.
+These were full application tests that called the actual HTTP server. Before each test, I truncated the Postgres tables and started the application. Other setup included user creation, generated account history, and service logins.
 
 On a dev server with the same specs as CI, setup alone took **2.8 seconds per test**:
 
@@ -37,13 +37,13 @@ I instrumented the initialization code to see **where those 2.8 seconds went**. 
 
 Five areas stood out:
 
-- **Spec parsing:** Each test parsed the same spec. We parsed it once per Java process and reused the result.
-- **Connection pool:** Each test created a new pool and destroyed it afterward. Each new Postgres connection starts a [new server process](https://www.postgresql.org/docs/17/tutorial-arch.html), which adds cost. We reused one pool per test class.[^connections]
-- **Database cleanup:** Each test ran `TRUNCATE` on the Postgres tables. We put the Postgres data directory on `tmpfs`, a RAM disk, to make this faster.
-- **Generated history:** User creation generated account history that these tests did not need. We removed it from the setup.
-- **Password checks:** Service logins ran `BCrypt` checks during setup. We bypassed them in these tests.[^passwords]
+- **Spec parsing:** Each test parsed the same spec. I parsed it once per Java process and reused the result.
+- **Connection pool:** Each test created a new pool and destroyed it afterward. Each new Postgres connection starts a [new server process](https://www.postgresql.org/docs/17/tutorial-arch.html), which adds cost. I reused one pool per test class.[^connections]
+- **Database cleanup:** Each test ran `TRUNCATE` on the Postgres tables. I put the Postgres data directory on `tmpfs`, a RAM disk, to make this faster.
+- **Generated history:** User creation generated account history that these tests did not need. I removed it from the setup.
+- **Password checks:** Service logins ran `BCrypt` checks during setup. I bypassed them in these tests.[^passwords]
 
-Why not start the application once for all tests? We wanted each test to start from a known state, regardless of test order. We kept a fresh application and truncated tables for each test.
+Why not start the application once for all tests? I wanted each test to start from a known state, regardless of test order. I kept a fresh application and truncated tables for each test.
 
 ![Test initialization before and after changes to spec reuse, database storage, connection pools, and fixture data.](./test-setup-before-after.png)
 
@@ -64,13 +64,13 @@ Each job also downloaded dependencies from Maven Central, the public Java packag
 
 ![Repeated CI dependency downloads receive HTTP 429 responses from Maven Central.](./maven-said.png)
 
-We moved shared library builds into a job that published the built library files when the code changed. **Three jobs now downloaded those files** instead of compiling the libraries again.[^versions] The deployment job kept its own build.
+I moved shared library builds into a job that published the built library files when the code changed. **Three jobs now downloaded those files** instead of compiling the libraries again.[^versions] The deployment job kept its own build.
 
-For downloads, we used **Google Cloud Artifact Registry** as our internal managed Maven proxy. It [downloads and caches each package version on its first request](https://docs.cloud.google.com/artifact-registry/docs/repositories/remote-overview#how-remote-repositories-work). Later requests receive the cached copy.
+For downloads, I used **Google Cloud Artifact Registry** as an internal managed Maven proxy. It [downloads and caches each package version on its first request](https://docs.cloud.google.com/artifact-registry/docs/repositories/remote-overview#how-remote-repositories-work). Later requests receive the cached copy.
 
 ![Shared library build reuse and dependency downloads through the GCP repository.](./shared-build-and-mirror.png)
 
-We also made some service checks conditional on changed files. Those rules include changes to shared libraries and build configuration.
+I also made some service checks conditional on changed files. Those rules include changes to shared libraries and build configuration.
 
 **Before making a step faster, check whether it needs to run again.**
 
