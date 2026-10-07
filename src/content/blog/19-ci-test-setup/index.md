@@ -1,5 +1,5 @@
 ---
-title: "Stop doing the same work twice in CI"
+title: "We made CI faster by doing less"
 summary: "We cut test setup by about one second per test and removed shared library compilation from three CI jobs."
 date: "October 7 2026"
 draft: false
