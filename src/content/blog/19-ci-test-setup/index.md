@@ -1,5 +1,5 @@
 ---
-title: "How I made CI 35% faster by doing less"
+title: "Making test init 35% faster by doing less"
 summary: "I cut test setup by about one second per test and removed shared library compilation from three CI jobs."
 date: "October 7 2026"
 draft: false
