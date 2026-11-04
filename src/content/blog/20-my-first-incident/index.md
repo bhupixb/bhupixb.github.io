@@ -2,6 +2,7 @@
 title: "My first incident: a null pointer from an old token"
 summary: "We added a new claim to our login token. Customers who still had an old token got an error on every page, and none of us could reproduce it."
 date: "November 4 2026"
+image: "./cover.png"
 draft: false
 tags:
 
@@ -14,6 +15,8 @@ tags:
 In July 2025, I caused my first production incident. A `NullPointerException`, in code I wrote.
 
 It was an interesting one, because none of us could reproduce it.
+
+![An expired token in local storage, missing accountId, crashes the interceptor and returns a 500 Unexpected error occurred.](./cover.png)
 
 ### Some context
 
