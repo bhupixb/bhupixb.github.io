@@ -39,7 +39,7 @@ Five areas stood out:
 
 - **Spec parsing:** Each test parsed the same spec. I parsed it once per Java process and reused the result.
 - **Connection pool:** Each test created a new pool and destroyed it afterward. Each new Postgres connection starts a [new server process](https://www.postgresql.org/docs/17/tutorial-arch.html), which adds cost. I reused one pool per test class.[^connections]
-- **Database cleanup:** Each test ran `TRUNCATE` on the Postgres tables. I put the Postgres data directory on `tmpfs`, a RAM disk, to make this faster.
+- **Database cleanup:** Each test ran `TRUNCATE` on the Postgres tables. I [put the Postgres data directory on `tmpfs`](/blog/18-testcontainers-postgres-in-ram/), a RAM disk, to make this faster.
 - **Generated history:** User creation generated account history that these tests did not need. I removed it from the setup.
 - **Password checks:** Service logins ran `BCrypt` checks during setup. I bypassed them in these tests.[^passwords]
 
