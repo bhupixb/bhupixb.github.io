@@ -2,6 +2,7 @@
 title: "Mount your Postgres TestContainers on RAM"
 summary: "I moved a disposable Testcontainers database to tmpfs. Truncating 50+ tables before each test now takes 17% of its previous time."
 date: "November 4 2026"
+image: "./cover.png"
 draft: false
 tags:
 
@@ -22,6 +23,8 @@ mounting RAM to your Postgres Data Directory.
 For tests, as the data is anyway throwaway, I decided to give it a try.
 
 *The truncate before each test now takes 17% of its previous time.*
+
+![Testcontainers withTmpFs mounts the Postgres data directory on RAM, and the truncate takes 17% of its previous time.](./cover.png)
 
 ### What is tmpfs, and what does "mounting" it mean?
 
