@@ -1,0 +1,455 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="Interactive walkthrough of GCP Private Service Connect: build a producer/consumer connection between two VPCs with overlapping IP ranges, one resource at a time, and see what breaks when each piece is missing."><meta name="note:date" content="2026-11-09"><meta name="note:tags" content="gcp, networking"><meta name="author" content="Bhupendra Yadav"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/png" sizes="48x48" href="/favicon.png"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>GCP Private Service Connect, Step by Step</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Light only, GitHub-markdown look. Layout: stepper → live network stage → explanation + packet log. Green = customer, blue = YBM, yellow = NAT, red = failure. */
+:root {
+  color-scheme: light;
+  --bg: #ffffff; --surface: #ffffff; --fg: #1f2328; --muted: #59636e; --line: #d1d9e0; --soft: #f6f8fa;
+  --cust: #1a7f37; --cust-bg: #dafbe1;
+  --ybm: #0969da; --ybm-bg: #ddf4ff;
+  --nat: #9a6700; --nat-bg: #fff8c5;
+  --bad: #d1242f; --bad-bg: #ffebe9;
+  --f-body: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  --f-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 16px; line-height: 1.6; }
+.wrap { max-width: 1000px; margin: 0 auto; padding-block: 32px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px; }
+.wrap > * { min-width: 0; }
+h1, h2, h3 { margin: 0; font-weight: 600; line-height: 1.25; text-wrap: balance; }
+h1 { font-size: 30px; padding-bottom: 0.3em; border-bottom: 1px solid var(--line); }
+h2 { font-size: 22px; }
+h3 { font-size: 15px; }
+p { margin: 0; max-width: 72ch; }
+code, .mono { font-family: var(--f-mono); font-size: 0.88em; }
+code { background: rgba(129,139,152,0.12); padding: 1px 5px; border-radius: 6px; overflow-wrap: anywhere; }
+a { color: var(--ybm); }
+.lede { color: var(--muted); }
+
+.idea { border: 1px solid var(--line); background: var(--soft); border-radius: 6px; padding: 14px 16px; display: grid; gap: 6px; }
+
+.stepper { display: flex; flex-wrap: wrap; gap: 6px; }
+.stepper button { font: inherit; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 5px 12px 5px 6px; border-radius: 999px; }
+.stepper button .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font-size: 12px; font-weight: 600; background: var(--soft); border: 1px solid var(--line); }
+.stepper button.who-ybm .n { color: var(--ybm); }
+.stepper button.who-cust .n { color: var(--cust); }
+.stepper button.done .n { background: var(--soft); }
+.stepper button[aria-current="step"] { border-color: var(--fg); box-shadow: inset 0 0 0 1px var(--fg); }
+.stepper button:focus-visible, .btn:focus-visible { outline: 2px solid var(--ybm); outline-offset: 2px; }
+
+.stage { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); padding: 12px; overflow-x: auto; }
+.stage svg { display: block; width: 100%; min-width: 760px; height: auto; color: var(--fg); }
+svg text { fill: currentColor; font-family: var(--f-body); font-size: 13px; }
+svg .tt { font-weight: 600; }
+svg .tm { font-family: var(--f-mono); font-size: 11.5px; fill: var(--muted); }
+svg .ts { font-size: 11.5px; fill: var(--muted); }
+svg .tc { fill: var(--cust); font-weight: 600; }
+svg .ty { fill: var(--ybm); font-weight: 600; }
+svg .tn { fill: var(--nat); font-weight: 600; font-size: 11.5px; }
+svg .z-cust { fill: #f3fbf5; stroke: var(--cust); stroke-width: 1.5; }
+svg .z-ybm { fill: #f4f9ff; stroke: var(--ybm); stroke-width: 1.5; }
+svg .z-g { fill: none; stroke: var(--line); stroke-width: 1.2; stroke-dasharray: 5 4; }
+svg .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.3; }
+svg .b-cust { fill: var(--cust-bg); stroke: var(--cust); stroke-width: 1.5; }
+svg .b-ybm { fill: var(--ybm-bg); stroke: var(--ybm); stroke-width: 1.5; }
+svg .b-nat { fill: var(--nat-bg); stroke: var(--nat); stroke-width: 1.5; }
+svg .ln { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+svg .ln-d { stroke: var(--muted); stroke-width: 1.2; fill: none; stroke-dasharray: 4 3; }
+svg .wall { stroke: var(--bad); stroke-width: 6; stroke-linecap: round; }
+svg .ah { fill: var(--muted); }
+svg .comp { transition: opacity .25s; }
+svg .comp.ghost { opacity: 0.16; }
+svg .comp.focus rect { stroke-width: 3; }
+svg .comp.broken rect { stroke: var(--bad); stroke-width: 3; stroke-dasharray: 6 4; }
+svg .comp.broken { opacity: 0.55; }
+svg #pkt { fill: var(--fg); stroke: var(--bg); stroke-width: 2; }
+svg #pkt.reply { fill: var(--cust); }
+svg #pkt.nat { fill: var(--nat); }
+svg .fail-c { fill: var(--bad-bg); stroke: var(--bad); stroke-width: 2; }
+svg .fail-x { fill: var(--bad); font-weight: 700; font-size: 15px; }
+svg .warn-c { fill: var(--nat-bg); stroke: var(--nat); stroke-width: 2; }
+svg .warn-x { fill: var(--nat); font-weight: 700; font-size: 15px; }
+
+.panel { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 760px) { .panel { grid-template-columns: 1fr; } }
+.card { border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: grid; gap: 10px; align-content: start; background: var(--surface); min-width: 0; }
+.tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 0 8px; border-radius: 999px; border: 1px solid; }
+.tag.ybm { color: var(--ybm); background: var(--ybm-bg); border-color: var(--ybm); }
+.tag.cust { color: var(--cust); background: var(--cust-bg); border-color: var(--cust); }
+.tag.all { color: var(--fg); background: var(--soft); border-color: var(--line); }
+.lbl { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.analogy { background: var(--nat-bg); border: 1px solid #d4a72c66; border-radius: 6px; padding: 10px 12px; display: grid; gap: 4px; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; padding: 5px 14px; border-radius: 6px; border: 1px solid var(--line); background: var(--soft); color: var(--fg); }
+.btn.primary { background: #1f883d; border-color: #1a7f37; color: #ffffff; }
+.btn.danger { color: var(--bad); }
+.btn:hover { filter: brightness(0.97); }
+.btn[disabled] { opacity: 0.5; cursor: default; }
+
+ol.log { margin: 0; padding-left: 22px; display: grid; gap: 8px; font-size: 14px; }
+ol.log li { padding-left: 2px; }
+ol.log .hdr { display: block; font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+ol.log li.fail { color: var(--bad); }
+ol.log li.warn { color: var(--nat); }
+ol.log li.ok { color: var(--cust); }
+.empty { color: var(--muted); font-size: 14px; }
+
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 7px 10px; border: 1px solid var(--line); vertical-align: top; }
+th { background: var(--soft); font-weight: 600; }
+.tablebox { overflow-x: auto; }
+.tablebox table { min-width: 560px; }
+.nav { display: flex; justify-content: space-between; gap: 8px; }
+footer { font-size: 13px; color: var(--muted); }
+.about { border: 1px solid var(--line); border-left: 4px solid var(--ybm); border-radius: 6px; padding: 14px 16px; display: grid; gap: 8px; font-size: 15px; }
+.about .meta { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.about .meta a { color: var(--muted); }
+.about dl { margin: 0; display: grid; gap: 6px; }
+.about dt { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.about dd { margin: 0 0 4px; max-width: 72ch; }
+</style>
+
+<div class="wrap">
+  <aside class="about" aria-label="About this explainer">
+    <div class="meta"><a href="/explainer/">&larr; Explainers</a><span>Bhupendra Yadav</span><span>Nov 2026</span><a href="/">bhupixb.github.io</a></div>
+    <dl>
+      <dt>The problem</dt>
+      <dd>A SaaS provider runs a database in its own GCP project. A customer wants to reach it <b>privately</b> from their own VPC: no VPC peering, no public IPs, no merging of IP ranges. The two VPCs may even use the same range. <b>Private Service Connect (PSC)</b> is GCP&rsquo;s answer: the provider (the <i>producer</i>) publishes a service, and the customer (the <i>consumer</i>) gets a private IP in their own VPC that leads to it.</dd>
+      <dt>What this page is</dt>
+      <dd>Setting up PSC takes five resources. On the producer side: a PSC NAT subnet, a service attachment and a firewall rule. On the consumer side: an endpoint and a private DNS record. I could follow the steps, but I could not see <i>why</i> each piece was needed, so I asked Claude to build this page while I was learning how PSC works for YugabyteDB Managed on GCP.</dd>
+      <dd>It is an interactive walkthrough. Build the connection one resource at a time, send a packet to see how far it gets, and remove a piece to see exactly what breaks without it.</dd>
+      <dt>Words used below</dt>
+      <dd><b>YBM</b>, &ldquo;we&rdquo;, &ldquo;our VPC&rdquo; = YugabyteDB Managed, the producer. <b>Customer</b> = the consumer. All names and IPs are made-up examples.</dd>
+      <dt>Assumes</dt>
+      <dd>Basic GCP networking: VPCs, subnets, firewall rules, internal load balancers.</dd>
+    </dl>
+  </aside>
+
+  <header style="display:grid;gap:10px">
+    <h1>Build a PSC connection, one piece at a time</h1>
+    <p class="lede">Each step adds one piece. Press <b>Send a packet</b> to see how far a packet gets. Press the red button to remove the piece and see what breaks. When you know why each piece exists, the whole design follows.</p>
+  </header>
+
+  <div class="idea">
+    <div class="lbl">The one idea to hold</div>
+    <p>The customer VPC and our VPC have <b>no routes to each other</b>, and here they even use <b>the same range</b> (<code>10.1.0.0/16</code>). The client and one of our nodes both have IP <code>10.1.0.11</code>. Every piece below exists to make one connection work between two networks that cannot see each other.</p>
+  </div>
+
+  <nav class="stepper" id="stepper" aria-label="Steps"></nav>
+
+  <div class="stage">
+    <svg id="stage" viewBox="0 0 960 360" role="img" aria-label="Customer VPC with client app, PSC endpoint and DNS record; Google in the middle; YBM cluster VPC with service attachment, NAT subnet, internal load balancer, firewall and tserver node. Pieces appear as you go through the steps.">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs>
+      <rect x="10" y="30" width="320" height="318" rx="8" class="z-cust"/>
+      <text x="24" y="54" class="tc">Customer VPC · 10.1.0.0/16</text>
+      <text x="24" y="336" class="ts">Customer creates: endpoint, DNS record</text>
+      <rect x="338" y="30" width="64" height="318" rx="8" class="z-g"/>
+      <text x="370" y="54" text-anchor="middle" class="ts">Google</text>
+      <rect x="410" y="30" width="540" height="318" rx="8" class="z-ybm"/>
+      <text x="424" y="54" class="ty">YBM cluster VPC · 10.1.0.0/16</text>
+      <text x="424" y="336" class="ts">YBM creates: NAT subnet, service attachment, firewall rule</text>
+
+      <!-- always there -->
+      <rect x="30" y="100" width="130" height="56" rx="6" class="box"/>
+      <text x="95" y="123" text-anchor="middle" class="tt">Client app</text>
+      <text x="95" y="142" text-anchor="middle" class="tm">10.1.0.11</text>
+      <rect x="600" y="100" width="120" height="56" rx="6" class="box"/>
+      <text x="660" y="123" text-anchor="middle" class="tt">Internal LB</text>
+      <text x="660" y="142" text-anchor="middle" class="tm">lb-&lt;id&gt; 10.1.0.5</text>
+      <rect x="760" y="100" width="180" height="56" rx="6" class="box"/>
+      <text x="850" y="123" text-anchor="middle" class="tt">tserver node</text>
+      <text x="850" y="142" text-anchor="middle" class="tm">10.1.0.11</text>
+      <text x="850" y="176" text-anchor="middle" class="tn">same IP as the client</text>
+      <line x1="720" y1="128" x2="758" y2="128" class="ln" marker-end="url(#ar)"/>
+
+      <!-- 1 NAT subnet -->
+      <g class="comp" id="c-nat">
+        <rect x="430" y="240" width="140" height="56" rx="6" class="b-nat"/>
+        <text x="500" y="263" text-anchor="middle" class="tt">PSC NAT subnet</text>
+        <text x="500" y="282" text-anchor="middle" class="tm">100.64.64.0/25</text>
+      </g>
+      <!-- 2 attachment -->
+      <g class="comp" id="c-att">
+        <rect x="430" y="100" width="140" height="56" rx="6" class="b-ybm"/>
+        <text x="500" y="123" text-anchor="middle" class="tt">Service attachment</text>
+        <text x="500" y="142" text-anchor="middle" class="tm">accept: acme-prod</text>
+        <line x1="570" y1="128" x2="598" y2="128" class="ln" marker-end="url(#ar)"/>
+        <line x1="500" y1="156" x2="500" y2="238" class="ln-d"/>
+        <text x="508" y="206" class="ts">takes source IPs from</text>
+      </g>
+      <!-- 3 firewall -->
+      <g class="comp" id="c-fw">
+        <line x1="740" y1="92" x2="740" y2="166" class="wall"/>
+        <rect x="660" y="240" width="270" height="56" rx="6" class="box"/>
+        <text x="795" y="263" text-anchor="middle" class="tt">Firewall rule</text>
+        <text x="795" y="282" text-anchor="middle" class="tm">allow 100.64.64.0/25 → :5433, 9042</text>
+        <line x1="740" y1="238" x2="740" y2="170" class="ln-d"/>
+      </g>
+      <!-- 4 endpoint -->
+      <g class="comp" id="c-ep">
+        <rect x="190" y="100" width="125" height="56" rx="6" class="b-cust"/>
+        <text x="252" y="123" text-anchor="middle" class="tt">PSC endpoint</text>
+        <text x="252" y="142" text-anchor="middle" class="tm">10.1.9.20</text>
+        <line x1="160" y1="128" x2="188" y2="128" class="ln" marker-end="url(#ar)"/>
+        <line x1="315" y1="128" x2="428" y2="128" class="ln" marker-end="url(#ar)"/>
+      </g>
+      <!-- 5 DNS -->
+      <g class="comp" id="c-dns">
+        <rect x="30" y="240" width="285" height="56" rx="6" class="box"/>
+        <text x="172" y="263" text-anchor="middle" class="tt">Private DNS record</text>
+        <text x="172" y="282" text-anchor="middle" class="tm">&lt;cluster-host&gt; → 10.1.9.20</text>
+        <line x1="95" y1="238" x2="95" y2="160" class="ln-d" marker-end="url(#ar)"/>
+      </g>
+
+      <g id="marks"></g>
+      <circle id="pkt" r="8" cx="-20" cy="-20"/>
+    </svg>
+  </div>
+
+  <div class="panel">
+    <div class="card" id="explain"></div>
+    <div class="card">
+      <div class="lbl">Packet log</div>
+      <div class="actions">
+        <button class="btn primary" id="send" type="button">Send a packet</button>
+        <span id="breaks" class="actions"></span>
+      </div>
+      <ol class="log" id="log"></ol>
+      <p class="empty" id="logEmpty">Press <b>Send a packet</b>. The log shows source and destination at each hop.</p>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="btn" id="prev" type="button">← Previous</button>
+    <button class="btn" id="next" type="button">Next →</button>
+  </div>
+
+  <section style="display:grid;gap:12px">
+    <h2>All the pieces on one table</h2>
+    <div class="tablebox">
+    <table>
+      <thead><tr><th>Piece</th><th>Who</th><th>One-line job</th><th>Without it</th><th>Switchboard picture</th></tr></thead>
+      <tbody>
+        <tr><td>NAT subnet</td><td>YBM</td><td>Gives each incoming connection a source IP that our VPC owns</td><td>Our node cannot reply. GCP will not create the attachment.</td><td>Visitor extensions</td></tr>
+        <tr><td>Service attachment</td><td>YBM</td><td>The door: points at the LB, holds the accept list</td><td>Nothing for the customer to point at</td><td>Switchboard with a guest list</td></tr>
+        <tr><td>Firewall rule</td><td>YBM</td><td>Lets NAT addresses reach the nodes on 5433, 9042</td><td>Nodes drop every packet</td><td>Staff take calls from visitor extensions</td></tr>
+        <tr><td>Endpoint</td><td>Customer</td><td>An IP in their VPC that leads to our door</td><td>Their apps have no address that goes to us</td><td>Speed-dial button in their office</td></tr>
+        <tr><td>DNS record</td><td>Customer</td><td>Gives the endpoint IP the name on our TLS certificate</td><td>Works with <code>sslmode=require</code> only. <code>verify-full</code> fails.</td><td>Name in the contact list</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <footer>Example values: customer project <code>acme-prod</code>, region <code>us-east1</code>. Further reading: <a href="https://cloud.google.com/vpc/docs/private-service-connect" target="_blank" rel="noopener">Google Cloud: Private Service Connect</a>. More <a href="/explainer/">explainers</a>.</footer>
+</div>
+
+<script>
+(function () {
+  const COMPS = ['nat', 'att', 'fw', 'ep', 'dns'];
+  const STEPS = [
+    { comp: 'nat', who: 'ybm', short: 'NAT subnet', title: 'YBM creates a PSC NAT subnet',
+      what: 'A small subnet in our VPC, <code>100.64.64.0/25</code>, with purpose <code>PRIVATE_SERVICE_CONNECT</code>. No VM lives in it. Google uses its addresses for one job: it writes one of them as the <b>source</b> of each packet that comes in through PSC.',
+      why: 'Our node must reply to the client. But the client address <code>10.1.0.11</code> is useless here: our VPC has no route to the customer, and <code>10.1.0.11</code> is our own node. So Google swaps the source to an address we own, like <code>100.64.64.7</code>. Our node replies to that address. The VPC knows it belongs to PSC, and Google maps it back to the customer.',
+      analogy: '<b>Visitor extensions.</b> Each outside caller gets a temporary internal extension, for example ext 7. Our staff call back ext 7, and the switchboard connects them to the right caller. Staff never need to dial outside.',
+      breaks: [{ key: 'nat', label: 'Remove the NAT subnet' }] },
+    { comp: 'att', who: 'ybm', short: 'Service attachment', title: 'YBM creates the service attachment',
+      what: 'A resource that publishes our internal LB <code>lb-&lt;id&gt;</code>. It names the NAT subnet and holds an <b>accept list</b> of customer project IDs (<code>acme-prod</code>). Its name is a URI: <code>projects/&lt;ybm&gt;/regions/us-east1/serviceAttachments/attachment-&lt;id&gt;</code>. We give this URI to the customer.',
+      why: 'The customer cannot point at our LB: they have no route to it. The attachment is the one thing they are allowed to point at. It decides who gets in, and it sends accepted traffic to the LB.',
+      analogy: '<b>The switchboard with a guest list.</b> It answers only calls from companies on the list. Other callers wait on hold forever (PENDING).',
+      breaks: [{ key: 'att', label: 'Remove the attachment' }, { key: 'accept', label: 'Remove acme-prod from the list' }] },
+    { comp: 'fw', who: 'ybm', short: 'Firewall rule', title: 'YBM opens the firewall for the NAT range',
+      what: 'An ingress rule: allow TCP 5433 and 9042 from <code>100.64.64.0/25</code> to the cluster nodes (network tag <code>&lt;cluster-tag&gt;</code>).',
+      why: 'GCP blocks all incoming traffic to a VM unless a rule allows it. Our LB is a pass-through LB, so the node sees the NAT address as the source. No current rule allows that range.',
+      analogy: '<b>Staff take calls only from known extensions.</b> We add the visitor block to the list.',
+      breaks: [{ key: 'fw', label: 'Remove the firewall rule' }] },
+    { comp: 'ep', who: 'cust', short: 'Endpoint', title: 'The customer creates an endpoint',
+      what: 'In their own project: reserve one internal IP in their subnet (<code>10.1.9.20</code>), and create a forwarding rule on it that targets our attachment URI. If <code>acme-prod</code> is on the accept list, the connection becomes ACCEPTED.',
+      why: 'The client app can only send packets to addresses in its own VPC. The endpoint is that address. Google connects it to our attachment. Note that <code>10.1.0.5</code> (our LB) means a customer machine in their own network.',
+      analogy: '<b>A speed-dial button in the customer office.</b> Press it, and the call goes to our switchboard. The customer does not need our phone system.',
+      breaks: [{ key: 'ep', label: 'Remove the endpoint' }] },
+    { comp: 'dns', who: 'cust', short: 'DNS record', title: 'The customer adds a private DNS record',
+      what: 'A record in their private Cloud DNS zone: <code>&lt;cluster-host&gt;</code> → <code>10.1.9.20</code>. YBM shows this name in the UI.',
+      why: 'The cluster TLS certificate lists host names, not the customer IP. If the app connects with the name, <code>sslmode=verify-full</code> passes. The packet path does not change.',
+      analogy: '<b>A name in the contact list.</b> People dial "YugabyteDB", not a raw extension. Caller ID then matches.',
+      breaks: [{ key: 'dns', label: 'Remove the DNS record' }] },
+    { comp: null, who: 'all', short: 'All together', title: 'All five pieces',
+      what: 'YBM made three resources in our project. The customer made two in theirs. Neither side touched the other side’s network. No routes were shared.',
+      why: 'Follow the packet: name → endpoint IP → Google → attachment (accept list check, source rewritten to a NAT IP) → LB → firewall → node. The reply goes to the NAT IP, back through Google, and arrives at the client from <code>10.1.9.20</code>.',
+      analogy: '<b>The whole call.</b> Customer presses speed-dial, the switchboard checks the guest list, gives the call a visitor extension, rings the team, and staff call back the visitor extension.',
+      breaks: [] }
+  ];
+  const P = { app: [160, 128], ep: [252, 128], att: [500, 128], lb: [660, 128], fw: [740, 128], node: [850, 128] };
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const $ = (id) => document.getElementById(id);
+  const NS = 'http://www.w3.org/2000/svg';
+  let idx = 0, run = 0, missing = null;
+
+  function scenario(miss) {
+    const h = [];
+    if (miss === 'ep') return { hops: h, fail: { at: 'app', msg: 'The app has no address that leads to YBM. It tries <code>10.1.0.5</code>, but in the customer VPC that is one of their own machines. Their VPC has no route to us.' } };
+    if (miss === 'att') return { hops: h, fail: { at: 'ep', msg: 'The endpoint has nothing to target. GCP refuses to create a forwarding rule that points at a missing attachment.' } };
+    const named = miss !== 'dns';
+    h.push({ to: 'ep', src: '10.1.0.11', dst: '10.1.9.20:5433',
+      text: named ? 'DNS gives <code>10.1.9.20</code>. The app sends to the endpoint in its own VPC.' : 'No DNS name. The app uses the raw IP <code>10.1.9.20</code>.' });
+    if (miss === 'accept') return { hops: h, fail: { at: 'att', msg: '<code>acme-prod</code> is not on the accept list. The connection stays PENDING, and Google drops the packet.' } };
+    h.push({ to: 'att', src: '10.1.0.11', dst: 'attachment', text: 'Google carries the packet to our attachment. <code>acme-prod</code> is on the list: ACCEPTED.' });
+    const src = miss === 'nat' ? '10.1.0.11' : '100.64.64.7';
+    h.push({ to: 'lb', src, dst: '10.1.0.5:5433', nat: miss !== 'nat',
+      text: miss === 'nat' ? 'No NAT subnet: the source stays <code>10.1.0.11</code>.' : 'Source rewritten to <code>100.64.64.7</code> from the NAT subnet. Destination is the LB.' });
+    h.push({ to: 'fw', src, dst: '10.1.0.5:5433', nat: miss !== 'nat', text: 'The LB picks a healthy node.' });
+    if (miss === 'fw') return { hops: h, fail: { at: 'fw', msg: 'No rule allows <code>100.64.64.0/25</code>. GCP drops the packet before the node sees it.' } };
+    h.push({ to: 'node', src, dst: '10.1.0.5:5433', nat: miss !== 'nat',
+      text: miss === 'nat' ? 'Assume the firewall lets it in.' : 'The firewall allows the NAT range. The node gets the packet.' });
+    if (miss === 'nat') return { hops: h, fail: { at: 'node', msg: 'The node sees source <code>10.1.0.11</code>, which is its own IP. The reply goes to itself. With any other client IP, the reply also fails: our VPC has no route to the customer. (In real GCP you cannot even create an attachment without a NAT subnet.)' } };
+    return { hops: h, reply: true, warn: named ? null : { at: 'app', msg: 'The packet works, but TLS <code>verify-full</code> fails. The certificate is for <code>&lt;cluster-host&gt;</code>, not <code>10.1.9.20</code>. Only <code>sslmode=require</code> works.' } };
+  }
+
+  function renderStepper() {
+    const nav = $('stepper'); nav.textContent = '';
+    STEPS.forEach((s, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'who-' + s.who + (i < idx ? ' done' : '');
+      if (i === idx) b.setAttribute('aria-current', 'step');
+      b.innerHTML = '<span class="n">' + (i + 1) + '</span>' + s.short;
+      b.addEventListener('click', () => go(i));
+      nav.appendChild(b);
+    });
+  }
+
+  function renderStage() {
+    const s = STEPS[idx];
+    COMPS.forEach((c, i) => {
+      const g = $('c-' + c);
+      let built = missing ? true : i <= idx;
+      const isBroken = missing && (c === missing || (missing === 'accept' && c === 'att'));
+      if (missing && c === missing) built = false;
+      g.classList.toggle('ghost', !built && !isBroken);
+      g.classList.toggle('broken', !!isBroken);
+      g.classList.toggle('focus', !missing && s.comp === c);
+    });
+  }
+
+  function renderExplain() {
+    const s = STEPS[idx];
+    const tag = s.who === 'ybm' ? '<span class="tag ybm">YBM · producer</span>' : s.who === 'cust' ? '<span class="tag cust">Customer · consumer</span>' : '<span class="tag all">Both sides</span>';
+    $('explain').innerHTML = '<div>' + tag + '</div><h2>' + (idx + 1) + '. ' + s.title + '</h2>' +
+      '<div class="lbl">What it is</div><p>' + s.what + '</p>' +
+      '<div class="lbl">Why it is needed</div><p>' + s.why + '</p>' +
+      '<div class="analogy"><div class="lbl">Switchboard picture</div><p>' + s.analogy + '</p></div>';
+    const br = $('breaks'); br.textContent = '';
+    s.breaks.forEach((b) => {
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'btn danger'; btn.textContent = b.label;
+      btn.addEventListener('click', () => simulate(b.key));
+      br.appendChild(btn);
+    });
+    $('prev').disabled = idx === 0;
+    $('next').disabled = idx === STEPS.length - 1;
+  }
+
+  function clearRun() {
+    run++;
+    $('marks').textContent = '';
+    $('log').textContent = '';
+    $('logEmpty').hidden = false;
+    const p = $('pkt'); p.setAttribute('cx', -20); p.setAttribute('cy', -20); p.setAttribute('class', '');
+  }
+
+  function go(i) {
+    idx = Math.max(0, Math.min(STEPS.length - 1, i));
+    missing = null; clearRun();
+    renderStepper(); renderStage(); renderExplain();
+  }
+
+  function addLog(html, cls, hop) {
+    $('logEmpty').hidden = true;
+    const li = document.createElement('li');
+    if (cls) li.className = cls;
+    li.innerHTML = html + (hop ? '<span class="hdr">src ' + hop.src + ' → dst ' + hop.dst + '</span>' : '');
+    $('log').appendChild(li);
+  }
+
+  function mark(at, warn) {
+    const [x, y] = P[at];
+    const g = document.createElementNS(NS, 'g');
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', x); c.setAttribute('cy', y - 34); c.setAttribute('r', 13);
+    c.setAttribute('class', warn ? 'warn-c' : 'fail-c');
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', x); t.setAttribute('y', y - 29); t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('class', warn ? 'warn-x' : 'fail-x');
+    t.textContent = warn ? '!' : '✕';
+    g.appendChild(c); g.appendChild(t); $('marks').appendChild(g);
+  }
+
+  function move(from, to, token) {
+    const p = $('pkt');
+    const [x1, y1] = from, [x2, y2] = to;
+    if (reduce) { p.setAttribute('cx', x2); p.setAttribute('cy', y2); return Promise.resolve(token === run); }
+    const dur = 520, t0 = performance.now();
+    return new Promise((res) => {
+      function f(now) {
+        if (token !== run) return res(false);
+        const k = Math.min(1, (now - t0) / dur), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+        p.setAttribute('cx', x1 + (x2 - x1) * e); p.setAttribute('cy', y1 + (y2 - y1) * e);
+        if (k < 1) requestAnimationFrame(f); else res(true);
+      }
+      requestAnimationFrame(f);
+    });
+  }
+
+  async function play(sc) {
+    const token = ++run;
+    $('marks').textContent = ''; $('log').textContent = ''; $('logEmpty').hidden = true;
+    const p = $('pkt'); p.setAttribute('class', '');
+    p.setAttribute('cx', P.app[0]); p.setAttribute('cy', P.app[1]);
+    let cur = 'app';
+    for (const h of sc.hops) {
+      p.setAttribute('class', h.nat ? 'nat' : '');
+      if (!(await move(P[cur], P[h.to], token))) return;
+      addLog(h.text, '', h); cur = h.to;
+    }
+    if (sc.fail) {
+      mark(sc.fail.at, false); addLog(sc.fail.msg, 'fail');
+      p.setAttribute('cx', -20); p.setAttribute('cy', -20);
+      return;
+    }
+    if (sc.reply) {
+      p.setAttribute('class', 'reply');
+      const back = ['fw', 'lb', 'att', 'ep', 'app'];
+      for (const b of back) { if (!(await move(P[cur], P[b], token))) return; cur = b; }
+      addLog('Reply: the node answers <code>100.64.64.7</code>. That address is in the NAT subnet, so it goes back to the attachment. Google maps it to the customer connection. The client gets the reply from <code>10.1.9.20</code>.', 'ok');
+      if (sc.warn) { mark(sc.warn.at, true); addLog(sc.warn.msg, 'warn'); }
+    }
+  }
+
+  function simulate(key) {
+    missing = key; renderStage(); play(scenario(key));
+  }
+
+  $('send').addEventListener('click', () => {
+    missing = null; renderStage();
+    const firstMissing = COMPS.find((c, i) => i > idx);
+    const order = { ep: 'ep', dns: 'dns' };
+    let miss = null;
+    if (idx < 3) {
+      clearRun(); $('logEmpty').hidden = true;
+      mark('app', false);
+      addLog('The customer has no endpoint yet, so the packet cannot leave their VPC. Build the YBM side first, then step 4 adds the endpoint. To see why this piece matters, press the red button.', 'fail');
+      return;
+    }
+    if (firstMissing && order[firstMissing]) miss = order[firstMissing];
+    play(scenario(miss));
+  });
+  $('prev').addEventListener('click', () => go(idx - 1));
+  $('next').addEventListener('click', () => go(idx + 1));
+
+  go(0);
+})();
+</script>
+
+</body></html>

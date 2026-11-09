@@ -29,12 +29,18 @@ export const READING: Page = {
   DESCRIPTION: "Articles, videos, papers and other things worth keeping.",
 }
 
+export const EXPLAINERS: Page = {
+  TITLE: "Explainers",
+  DESCRIPTION: "Claude built these for me while I was learning a topic. I keep them here to come back to.",
+}
+
 export const LINKS = [
   { TEXT: "Home", HREF: "/" },
   { TEXT: "Blog", HREF: "/blog" },
   { TEXT: "Work", HREF: "/work" },
   { TEXT: "Projects", HREF: "/projects" },
   { TEXT: "Reading", HREF: "/reading" },
+  { TEXT: "Explainers", HREF: "/explainer" },
 ]
 
 export const SOCIALS = [
