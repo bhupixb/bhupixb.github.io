@@ -1,0 +1,657 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="Why apps like Hail and Canta need Shizuku: Android app sandboxing, the shell user (UID 2000), how ADB and wireless debugging work, and how Shizuku lends shell permissions to apps without root."><meta name="note:date" content="2026-11-09"><meta name="note:tags" content="android, linux"><meta name="author" content="Bhupendra Yadav"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" type="image/png" sizes="48x48" href="/favicon.png"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ADB, Wireless Debugging and Shizuku</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Fonts are self-hosted in /explainer/fonts/ (no third-party requests). */
+@font-face { font-family: 'Atkinson Hyperlegible'; font-style: italic; font-weight: 400; font-display: swap; src: url(/explainer/fonts/atkinson-hyperlegible-italic-latin.woff2) format('woff2'); }
+@font-face { font-family: 'Atkinson Hyperlegible'; font-style: normal; font-weight: 400; font-display: swap; src: url(/explainer/fonts/atkinson-hyperlegible-400-latin.woff2) format('woff2'); }
+@font-face { font-family: 'Atkinson Hyperlegible'; font-style: normal; font-weight: 700; font-display: swap; src: url(/explainer/fonts/atkinson-hyperlegible-700-latin.woff2) format('woff2'); }
+@font-face { font-family: 'Bricolage Grotesque'; font-style: normal; font-weight: 500; font-display: swap; src: url(/explainer/fonts/bricolage-grotesque-latin.woff2) format('woff2'); }
+@font-face { font-family: 'Bricolage Grotesque'; font-style: normal; font-weight: 700; font-display: swap; src: url(/explainer/fonts/bricolage-grotesque-latin.woff2) format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url(/explainer/fonts/jetbrains-mono-latin.woff2) format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 600; font-display: swap; src: url(/explainer/fonts/jetbrains-mono-latin.woff2) format('woff2'); }
+/* Layout: a single reading column with a sticky table of contents on wide screens; diagrams and tables break out to the column's full width. Single light theme by request. */
+:root {
+  color-scheme: light;
+  --bg: #f6f8f7;
+  --surface: #ffffff;
+  --ink: #17221e;
+  --muted: #55645e;
+  --line: #d9e1dd;
+  --accent: #0a7a5a;       /* app / Android green */
+  --accent-soft: #e2f3ec;
+  --shell: #3f4fb8;        /* shell uid 2000 */
+  --shell-soft: #e8eafa;
+  --root: #b5630d;         /* root uid 0 */
+  --root-soft: #fbefe1;
+  --warn: #a8321e;
+  --warn-soft: #fbe9e5;
+  --code-bg: #eef2f0;
+  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 17px;
+  line-height: 1.65;
+}
+.wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding-block: 48px 96px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 56px;
+}
+@media (max-width: 900px) {
+  .wrap { grid-template-columns: minmax(0, 1fr); gap: 24px; padding-block: 28px 64px; }
+  nav.toc { position: static !important; }
+}
+nav.toc {
+  position: sticky;
+  top: calc(24px + env(safe-area-inset-top, 0px));
+  align-self: start;
+  font-size: 14px;
+}
+nav.toc .label {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: t; }
+nav.toc li { counter-increment: t; }
+nav.toc a {
+  display: grid; grid-template-columns: 24px 1fr; gap: 4px;
+  color: var(--muted); text-decoration: none; padding: 5px 8px; border-radius: 6px;
+  line-height: 1.35;
+}
+nav.toc a::before { content: counter(t); font-family: var(--f-mono); font-size: 12px; color: var(--accent); padding-top: 1px; }
+nav.toc a:hover, nav.toc a:focus-visible { background: var(--accent-soft); color: var(--ink); outline: none; }
+@media (max-width: 900px) {
+  nav.toc { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  nav.toc ol { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+}
+
+main { min-width: 0; max-width: 760px; }
+header.hero { margin-bottom: 40px; }
+.eyebrow {
+  font-family: var(--f-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--accent); margin: 0 0 12px;
+}
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.15; color: var(--ink); }
+h1 { font-size: clamp(34px, 5.2vw, 52px); font-weight: 700; margin: 0 0 18px; letter-spacing: -.01em; }
+h2 { font-size: clamp(25px, 3.2vw, 32px); font-weight: 700; margin: 0 0 14px; }
+h3 { font-size: 20px; font-weight: 700; margin: 30px 0 8px; }
+.lede { font-size: 19px; color: var(--muted); margin: 0; max-width: 62ch; }
+p { margin: 0 0 16px; max-width: 68ch; }
+section { padding-top: 56px; scroll-margin-top: 16px; }
+section + section { border-top: 1px solid var(--line); margin-top: 56px; }
+.secnum { font-family: var(--f-mono); font-size: 13px; color: var(--accent); margin-bottom: 6px; display: block; }
+a { color: var(--accent); }
+strong { font-weight: 700; }
+ul, ol.steps { padding-left: 22px; margin: 0 0 16px; max-width: 66ch; }
+li { margin-bottom: 6px; }
+
+code {
+  font-family: var(--f-mono); font-size: .86em; background: var(--code-bg);
+  padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere;
+}
+pre {
+  font-family: var(--f-mono); font-size: 13.5px; line-height: 1.6;
+  background: #15201c; color: #dbe8e2; padding: 16px 18px; border-radius: 10px;
+  overflow-x: auto; margin: 0 0 20px;
+}
+pre code { background: none; padding: 0; color: inherit; font-size: inherit; overflow-wrap: normal; }
+pre .c { color: #8ea89c; }
+pre .p { color: #6fd3a8; user-select: none; }
+pre .o { color: #f2c38b; }
+
+.tldr {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding: 22px 24px; margin-top: 28px;
+}
+.tldr h2 { font-size: 15px; font-family: var(--f-mono); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+.tldr ol { margin: 0; padding-left: 20px; }
+.tldr li { margin-bottom: 8px; }
+.tldr li:last-child { margin-bottom: 0; }
+
+.callout {
+  border-radius: 10px; padding: 16px 18px; margin: 0 0 20px; max-width: 68ch;
+  background: var(--accent-soft); border: 1px solid #bfe3d4;
+}
+.callout.shell { background: var(--shell-soft); border-color: #cdd2f3; }
+.callout.warn { background: var(--warn-soft); border-color: #f1c9bf; }
+.callout p:last-child { margin-bottom: 0; }
+.callout .k {
+  display: block; font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em;
+  text-transform: uppercase; margin-bottom: 6px; color: var(--accent);
+}
+.callout.shell .k { color: var(--shell); }
+.callout.warn .k { color: var(--warn); }
+
+figure { margin: 8px 0 28px; }
+.diagram {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding: 16px; overflow-x: auto;
+}
+.diagram svg { display: block; width: 100%; min-width: 620px; height: auto; }
+figcaption { font-size: 14px; color: var(--muted); margin-top: 10px; max-width: 68ch; }
+svg text { font-family: var(--f-body); fill: var(--ink); }
+svg .mono { font-family: var(--f-mono); }
+svg .mut { fill: var(--muted); }
+
+.tablewrap { overflow-x: auto; margin: 0 0 24px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 15px; }
+th, td { text-align: left; vertical-align: top; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+th { font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: #fafcfb; }
+td.y { color: var(--accent); font-weight: 700; }
+td.n { color: var(--warn); font-weight: 700; }
+
+.pill {
+  display: inline-block; font-family: var(--f-mono); font-size: 12px; font-weight: 600;
+  padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+}
+.pill.app { background: var(--accent-soft); color: var(--accent); }
+.pill.shell { background: var(--shell-soft); color: var(--shell); }
+.pill.sys { background: #ece9f3; color: #5b3f8f; }
+.pill.root { background: var(--root-soft); color: var(--root); }
+
+.ladder { display: grid; gap: 10px; margin: 8px 0 24px; }
+.rung {
+  display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 16px; align-items: start;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px;
+}
+.rung .who { display: grid; gap: 6px; }
+.rung .uid { font-family: var(--f-mono); font-size: 12.5px; color: var(--muted); }
+.rung p { margin: 0; font-size: 15.5px; }
+.rung.app { border-left: 4px solid var(--accent); }
+.rung.shell { border-left: 4px solid var(--shell); }
+.rung.sys { border-left: 4px solid #5b3f8f; }
+.rung.root { border-left: 4px solid var(--root); }
+@media (max-width: 560px) { .rung { grid-template-columns: minmax(0, 1fr); gap: 8px; } }
+
+.compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 0 0 24px; }
+.compare > div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; min-width: 0; }
+.compare h4 { font-family: var(--f-display); font-size: 17px; margin: 0 0 6px; }
+.compare p { font-size: 15px; margin: 0; }
+@media (max-width: 640px) { .compare { grid-template-columns: minmax(0, 1fr); } }
+
+dl.gloss { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px 20px; margin: 0; }
+dl.gloss dt { font-family: var(--f-mono); font-size: 14px; font-weight: 600; color: var(--ink); }
+dl.gloss dd { margin: 0; font-size: 15.5px; color: var(--muted); }
+@media (max-width: 560px) { dl.gloss { grid-template-columns: minmax(0, 1fr); gap: 2px; } dl.gloss dd { margin-bottom: 12px; } }
+
+footer { margin-top: 64px; font-size: 13.5px; color: var(--muted); }
+.about { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 12px; padding: 16px 18px; margin: 0 0 32px; display: grid; gap: 10px; font-size: 15.5px; }
+.about .meta { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.about .meta a { color: var(--muted); }
+.about dl { margin: 0; display: grid; gap: 6px; }
+.about dt { font-family: var(--f-mono); font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+.about dd { margin: 0 0 4px; max-width: 68ch; }
+.about p { margin: 0; }
+</style>
+
+<div class="wrap">
+  <nav class="toc" aria-label="Contents">
+    <div class="label">Contents</div>
+    <ol>
+      <li><a href="#sandbox">Why apps have limits</a></li>
+      <li><a href="#ladder">The four levels of trust</a></li>
+      <li><a href="#adb">What ADB is</a></li>
+      <li><a href="#wifi">Why wireless debugging needs Wi‑Fi</a></li>
+      <li><a href="#self">The phone connects to itself</a></li>
+      <li><a href="#shizuku">How Shizuku works</a></li>
+      <li><a href="#why-shizuku">Why apps use Shizuku</a></li>
+      <li><a href="#limits">Limits and reboots</a></li>
+      <li><a href="#safety">Safety</a></li>
+      <li><a href="#cheat">Commands and terms</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <aside class="about" aria-label="About this explainer">
+      <div class="meta"><a href="/explainer/">&larr; Explainers</a><span>Bhupendra Yadav</span><span>Nov 2026</span><a href="/">bhupixb.github.io</a></div>
+      <dl>
+        <dt>The problem</dt>
+        <dd>Some Android apps (<a href="https://github.com/aistra0528/Hail" target="_blank" rel="noopener">Hail</a>, <a href="https://github.com/samolego/Canta" target="_blank" rel="noopener">Canta</a>, App Ops and others) can freeze apps, remove preinstalled bloatware or change hidden settings without root. To do it, they ask you to install <b>Shizuku</b>, turn on developer options and pair <b>wireless debugging</b>. The steps feel like magic: why do you need a debugging feature, why must you be on Wi&#8209;Fi, and why does it all stop working after a reboot?</dd>
+        <dt>What this page is</dt>
+        <dd>A primer that answers those questions from the bottom up: how Android limits apps, what the <code>shell</code> user and ADB are, how a phone can debug itself, and how Shizuku lends shell permissions to other apps. Claude built it for me while I was figuring out what I was actually granting when I set up Shizuku.</dd>
+        <dt>Assumes</dt>
+        <dd>You have used an Android phone&rsquo;s settings. Some Linux basics (users, processes) help but are not required.</dd>
+      </dl>
+    </aside>
+    <header class="hero">
+      <p class="eyebrow">Android internals</p>
+      <h1>ADB, wireless debugging, and why Shizuku exists</h1>
+      <p class="lede">You know the steps: turn on developer options, pair, start Shizuku. This page tells you why each step is necessary.</p>
+
+      <div class="tldr">
+        <h2>Summary</h2>
+        <ol>
+          <li>Each Android app runs as its own Linux user. This user has few permissions.</li>
+          <li>ADB runs commands as a special user named <strong>shell</strong> (UID 2000). Shell has many more permissions than an app. Shell has fewer permissions than root.</li>
+          <li>ADB needs a connection to a program on the phone named <code>adbd</code>. Wireless ADB uses a local network connection. Thus, both devices must be on the same network.</li>
+          <li>On Android 11 and later, an app on the phone can connect to <code>adbd</code> on the same phone. You do not need a computer. You still need Wi‑Fi, because Android turns on wireless debugging only when the phone is on Wi‑Fi.</li>
+          <li>Shizuku uses ADB one time to start a server. The server runs as shell. Other apps send requests to this server. Thus, these apps can use shell permissions without root.</li>
+        </ol>
+      </div>
+    </header>
+
+    <!-- 1 -->
+    <section id="sandbox">
+      <span class="secnum">01</span>
+      <h2>Why apps have limits</h2>
+      <p>Android uses Linux. Linux separates programs by <strong>user</strong>. When you install an app, Android makes a new Linux user for that app. Each user has a number, the UID (for example, <code>10234</code>).</p>
+      <p>Only the app's UID can read the app's private files. All processes of the app run as this UID.</p>
+      <p>Android adds two more protections:</p>
+      <ul>
+        <li><strong>Permission checks in system services.</strong> To do an important action, an app sends a request to a system service. Most system services are in one process, <code>system_server</code>. Requests go through <strong>Binder</strong>, Android's message system. Binder tells the service the UID of the sender. The service then checks: does this UID have the necessary permission?</li>
+        <li><strong>SELinux.</strong> The kernel uses a policy to limit what each process can access.</li>
+      </ul>
+      <p>Android cannot give all permissions to a normal app. Each permission has a <em>protection level</em>:</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Protection level</th><th>Who can get it</th><th>Example</th></tr></thead>
+          <tbody>
+            <tr><td><strong>normal</strong></td><td>All apps. Android gives it during installation.</td><td><code>INTERNET</code></td></tr>
+            <tr><td><strong>dangerous</strong></td><td>Apps, after you tap "Allow".</td><td><code>CAMERA</code>, <code>READ_CONTACTS</code></td></tr>
+            <tr><td><strong>signature</strong></td><td>Only apps signed with the same key as Android.</td><td><code>INSTALL_PACKAGES</code></td></tr>
+            <tr><td><strong>privileged</strong></td><td>Only apps that the phone maker installs in <code>/system/priv-app</code>.</td><td><code>CHANGE_COMPONENT_ENABLED_STATE</code></td></tr>
+            <tr><td><strong>development</strong> (flag)</td><td>Apps, if shell gives it with <code>pm grant</code>.</td><td><code>WRITE_SECURE_SETTINGS</code>, <code>DUMP</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Example: a Play Store app cannot freeze another app. The system checks the UID of the request and refuses it. To do this action, the request must come from a user with more trust.</p>
+    </section>
+
+    <!-- 2 -->
+    <section id="ladder">
+      <span class="secnum">02</span>
+      <h2>The four levels of trust</h2>
+      <p>Android has four important users. Each level has more trust than the level above it. Shizuku moves a request from level 1 to level 2.</p>
+      <div class="ladder">
+        <div class="rung app">
+          <div class="who"><span class="pill app">app</span><span class="uid">UID 10000+</span></div>
+          <p>All installed apps. Each app can use only its own files and the permissions you gave it.</p>
+        </div>
+        <div class="rung shell">
+          <div class="who"><span class="pill shell">shell</span><span class="uid">UID 2000</span></div>
+          <p>The user for ADB commands. Shell can install and remove apps, disable apps, give permissions to apps, change secure settings, read logs, take screenshots, and send taps. Shell cannot read the private data of other apps. Shell cannot change the system partition.</p>
+        </div>
+        <div class="rung sys">
+          <div class="who"><span class="pill sys">system</span><span class="uid">UID 1000</span></div>
+          <p>The core services of Android, for example <code>system_server</code>. You cannot usually get this level.</p>
+        </div>
+        <div class="rung root">
+          <div class="who"><span class="pill root">root</span><span class="uid">UID 0</span></div>
+          <p>Almost no limits. Only SELinux limits root. To get root, you must unlock the bootloader and use a tool such as Magisk. Root often stops banking apps and Play Integrity checks.</p>
+        </div>
+      </div>
+      <div class="callout shell">
+        <span class="k">Important</span>
+        <p>Shell is the best level for most users. Google gives shell many permissions because developers need them. You can get shell on a normal, locked phone. You only need to turn on developer options. Most Shizuku apps do the same actions as <code>adb shell</code>, but from an app.</p>
+      </div>
+      <p>To see the shell user, use this command:</p>
+<pre><code><span class="p">$ </span>adb shell id
+<span class="o">uid=2000(shell) gid=2000(shell) groups=2000(shell),1004(input),1007(log),1011(adb),...</span></code></pre>
+    </section>
+
+    <!-- 3 -->
+    <section id="adb">
+      <span class="secnum">03</span>
+      <h2>What ADB is</h2>
+      <p>ADB means Android Debug Bridge. ADB has three parts:</p>
+      <ul>
+        <li><strong>Client.</strong> The <code>adb</code> command that you type on your laptop.</li>
+        <li><strong>Server.</strong> A background program on your laptop. It starts when you use <code>adb</code> for the first time. It uses local port 5037. It keeps a list of connected phones and sends commands to them.</li>
+        <li><strong>Daemon (<code>adbd</code>).</strong> A program on the phone. It starts only when you turn on USB debugging or wireless debugging. It receives commands and runs them <em>as the shell user</em>. Then it sends the result back.</li>
+      </ul>
+
+      <figure>
+        <div class="diagram">
+          <svg viewBox="0 0 760 290" role="img" aria-label="ADB parts: client and server on the laptop connect by USB or TCP to adbd on the phone. adbd runs commands as shell.">
+            <defs>
+              <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#55645e"/></marker>
+            </defs>
+            <rect x="10" y="20" width="270" height="250" rx="14" fill="#f6f8f7" stroke="#d9e1dd"/>
+            <text x="28" y="48" font-weight="700" font-size="15">Laptop</text>
+            <rect x="30" y="66" width="230" height="58" rx="10" fill="#ffffff" stroke="#d9e1dd"/>
+            <text x="46" y="91" font-weight="700" font-size="14">adb client</text>
+            <text x="46" y="111" class="mono mut" font-size="12">$ adb shell ...</text>
+            <rect x="30" y="170" width="230" height="74" rx="10" fill="#ffffff" stroke="#d9e1dd"/>
+            <text x="46" y="195" font-weight="700" font-size="14">adb server</text>
+            <text x="46" y="215" class="mut" font-size="12.5">keeps the list of phones</text>
+            <text x="46" y="232" class="mut" font-size="12.5">and your key (adbkey)</text>
+            <line x1="145" y1="124" x2="145" y2="168" stroke="#55645e" stroke-width="1.5" marker-end="url(#ar)"/>
+            <text x="154" y="151" class="mono mut" font-size="11.5">localhost:5037</text>
+
+            <line x1="262" y1="190" x2="478" y2="190" stroke="#0a7a5a" stroke-width="2" marker-end="url(#ar)" marker-start="url(#ar)"/>
+            <text x="370" y="178" text-anchor="middle" font-weight="700" font-size="13" fill="#0a7a5a">USB cable</text>
+            <line x1="262" y1="228" x2="478" y2="228" stroke="#3f4fb8" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ar)" marker-start="url(#ar)"/>
+            <text x="370" y="252" text-anchor="middle" font-weight="700" font-size="13" fill="#3f4fb8">or TCP on Wi‑Fi</text>
+
+            <rect x="480" y="20" width="270" height="250" rx="14" fill="#f6f8f7" stroke="#d9e1dd"/>
+            <text x="498" y="48" font-weight="700" font-size="15">Phone</text>
+            <rect x="500" y="170" width="230" height="74" rx="10" fill="#e8eafa" stroke="#cdd2f3"/>
+            <text x="516" y="195" font-weight="700" font-size="14">adbd (daemon)</text>
+            <text x="516" y="215" class="mut" font-size="12.5">checks your key, then</text>
+            <text x="516" y="232" class="mut" font-size="12.5">runs commands as shell</text>
+            <rect x="500" y="66" width="230" height="58" rx="10" fill="#ffffff" stroke="#d9e1dd"/>
+            <text x="516" y="91" font-weight="700" font-size="14">pm, am, settings, cmd …</text>
+            <text x="516" y="111" class="mono" font-size="12" fill="#3f4fb8">uid=2000 (shell)</text>
+            <line x1="615" y1="168" x2="615" y2="126" stroke="#55645e" stroke-width="1.5" marker-end="url(#ar)"/>
+            <text x="624" y="151" class="mut" font-size="12">starts</text>
+          </svg>
+        </div>
+        <figcaption>The client does not connect to the phone directly. The client sends commands to the server. The server connects to <code>adbd</code> by USB or by the network.</figcaption>
+      </figure>
+
+      <h3>How the phone trusts your laptop</h3>
+      <p>The first time you use <code>adb</code>, it makes an RSA key pair on your laptop (<code>~/.android/adbkey</code>). When you connect a USB cable, the phone shows "Allow USB debugging?". When you tap "Always allow", the phone saves the laptop's public key. After that, the phone trusts this laptop.</p>
+      <p>The security is physical access. You must connect the cable and tap Allow on the unlocked phone. Thus, the phone knows that you are the owner.</p>
+
+      <h3>Why it is a "bridge"</h3>
+      <p>ADB does not add new permissions to Android. ADB only connects your keyboard to a shell session on the phone. Commands such as <code>pm</code>, <code>am</code>, <code>settings</code>, and <code>cmd</code> are small programs on the phone. They send requests to system services through Binder. They run as UID 2000, so the services accept the requests.</p>
+    </section>
+
+    <!-- 4 -->
+    <section id="wifi">
+      <span class="secnum">04</span>
+      <h2>Why wireless debugging needs Wi‑Fi</h2>
+      <p>Wireless debugging means this: <code>adbd</code> listens on a network port. Your laptop opens a TCP connection to <code>phone-IP:port</code>. Then ADB works the same as on USB.</p>
+      <p>For a TCP connection, the laptop must reach the IP address of the phone. This is the main reason for Wi‑Fi. Android also adds security rules.</p>
+
+      <h3>Reason 1: The laptop must reach the phone</h3>
+      <p>On a Wi‑Fi network, the router gives local addresses, for example <code>192.168.1.42</code>. Devices on the same network can connect to each other.</p>
+      <p>On mobile data, the phone is behind the carrier's NAT. Your laptop cannot reach it.</p>
+      <p>You need a <em>local network</em>, not the internet. The router does not need an internet connection. A hotspot from your laptop also works.</p>
+
+      <h3>Reason 2: Android allows only Wi‑Fi</h3>
+      <p>Android turns on wireless debugging only when the phone is connected to Wi‑Fi. When you leave the network, Android turns it off. "Always allow on this network" saves that specific network.</p>
+      <p>An open debug port is a security risk. Google limits it to a Wi‑Fi network that you selected. Thus, unknown persons on other networks cannot reach it.</p>
+
+      <h3>Two methods for network ADB</h3>
+      <div class="compare">
+        <div>
+          <h4>Old method: <code>adb tcpip</code></h4>
+          <p>Works on all Android versions. You must connect a USB cable first. The port is always 5555. It stops after a reboot.</p>
+        </div>
+        <div>
+          <h4>New method: Wireless debugging (Android 11+)</h4>
+          <p>No cable. You pair one time with a 6‑digit code or a QR code. The port changes each time. TLS encrypts the connection. Your laptop can find the phone automatically.</p>
+        </div>
+      </div>
+
+<pre><code><span class="c"># Old method (USB cable necessary after each reboot)</span>
+<span class="p">$ </span>adb tcpip 5555
+<span class="p">$ </span>adb connect 192.168.1.42:5555
+
+<span class="c"># Android 11+ wireless debugging</span>
+<span class="c"># Phone: Developer options › Wireless debugging › Pair device with pairing code</span>
+<span class="p">$ </span>adb pair 192.168.1.42:37199        <span class="c"># pairing port, from the dialog</span>
+<span class="o">Enter pairing code: 482913</span>
+<span class="o">Successfully paired to 192.168.1.42:37199</span>
+<span class="p">$ </span>adb connect 192.168.1.42:41583     <span class="c"># connection port, from the main screen</span></code></pre>
+
+      <h3>What pairing does</h3>
+      <p>Wireless has no cable. Thus, Android needs a different proof that you are the owner. The proof is a code that shows only on the unlocked screen.</p>
+      <p>Pairing uses this code to exchange keys safely (with the SPAKE2 protocol). Then the phone saves your laptop's key. After pairing, TLS encrypts each connection. Other devices on the Wi‑Fi cannot read or change your commands.</p>
+      <p>There are two ports:</p>
+      <ul>
+        <li>The <strong>pairing port</strong> is open only while the pairing dialog is open.</li>
+        <li>The <strong>connection port</strong> is for normal sessions.</li>
+      </ul>
+      <p>Android changes both ports each time. Thus, a network scanner cannot find them at a known number.</p>
+      <div class="callout">
+        <span class="k">Discovery</span>
+        <p>Your laptop can find the phone without the IP address. <code>adbd</code> announces itself on the local network with mDNS (the same method that printers use). The service names are <code>_adb-tls-pairing._tcp</code> and <code>_adb-tls-connect._tcp</code>. mDNS works only inside one local network. This is one more reason why both devices must be on the same Wi‑Fi.</p>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section id="self">
+      <span class="secnum">05</span>
+      <h2>The phone connects to itself</h2>
+      <p>When <code>adbd</code> listens on a network port, any paired client can connect. This includes an app on the same phone. The app connects to <code>127.0.0.1</code> (localhost).</p>
+      <p>When you start Shizuku without a computer, these steps occur:</p>
+      <ol class="steps">
+        <li>You turn on Wireless debugging. You open "Pair device with pairing code". The phone shows a code.</li>
+        <li>You type the code in Shizuku's notification. Shizuku is now the ADB client. It pairs with <code>adbd</code> on the same phone and saves its own key.</li>
+        <li>Shizuku connects to <code>adbd</code> on localhost. It sends one command as shell. This command starts the Shizuku server.</li>
+      </ol>
+      <div class="callout shell">
+        <span class="k">Why Shizuku needs Wi‑Fi</span>
+        <p>In this method, no data goes out of the phone. But Android turns on Wireless debugging only when the phone is on Wi‑Fi. Thus, Wi‑Fi is only a condition, not a data path. After the Shizuku server starts, you can turn off Wi‑Fi and wireless debugging. The server continues to run until the next reboot.</p>
+      </div>
+      <p>Before Android 11, there was no pairing and no TLS. Only the <code>adb tcpip</code> method was available, and it needs a cable. Thus, on old phones, you need a computer to start Shizuku.</p>
+    </section>
+
+    <!-- 6 -->
+    <section id="shizuku">
+      <span class="secnum">06</span>
+      <h2>How Shizuku works</h2>
+      <p>Shizuku has two parts: the app, and a server process. ADB starts the server. Thus, the server gets the shell identity from ADB.</p>
+
+      <h3>Step 1: Start a process as shell</h3>
+      <p>The start command uses <code>app_process</code>. This is the Android tool that starts Java programs. <code>adbd</code> runs the command, so the server runs as UID 2000. If you have root, Shizuku can start the server as UID 0.</p>
+<pre><code><span class="c"># Approximate start command (the path changes with the version)</span>
+<span class="p">$ </span>adb shell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh
+<span class="o">info: shizuku_server started, uid=2000</span></code></pre>
+
+      <h3>Step 2: The server continues to run</h3>
+      <p>Usually, when an <code>adb shell</code> session ends, its commands stop. The Shizuku server separates from the session and continues to run. It gives a Binder connection to the Shizuku app. Other apps that use the Shizuku API also get this connection.</p>
+
+      <h3>Step 3: Apps send requests through the server</h3>
+      <p>Example: the app <a href="https://github.com/aistra0528/Hail" target="_blank" rel="noopener">Hail</a> wants to disable another app. If Hail sends this request directly, <code>system_server</code> sees UID 10234 and refuses.</p>
+      <p>With Shizuku, Hail sends the request to the Shizuku server. The server sends the real request to <code>system_server</code>. Now <code>system_server</code> sees UID 2000. Shell has the permission, so the request succeeds.</p>
+
+      <figure>
+        <div class="diagram">
+          <svg viewBox="0 0 760 330" role="img" aria-label="Without Shizuku, system_server refuses the app's request. With Shizuku, the request goes through the Shizuku server, which has UID 2000, and system_server accepts it.">
+            <defs>
+              <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0a7a5a"/></marker>
+              <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3f4fb8"/></marker>
+              <marker id="aw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#a8321e"/></marker>
+            </defs>
+            <text x="20" y="30" font-weight="700" font-size="14" class="mut">WITHOUT SHIZUKU</text>
+            <rect x="20" y="44" width="190" height="64" rx="10" fill="#e2f3ec" stroke="#bfe3d4"/>
+            <text x="36" y="70" font-weight="700" font-size="14">Your app</text>
+            <text x="36" y="92" class="mono" font-size="12" fill="#0a7a5a">uid 10234</text>
+            <line x1="212" y1="76" x2="536" y2="76" stroke="#a8321e" stroke-width="2" marker-end="url(#aw)"/>
+            <text x="374" y="66" text-anchor="middle" class="mono" font-size="12">setApplicationEnabledSetting()</text>
+            <text x="374" y="96" text-anchor="middle" font-size="13" font-weight="700" fill="#a8321e">Refused: no permission</text>
+            <rect x="540" y="44" width="200" height="64" rx="10" fill="#ffffff" stroke="#d9e1dd"/>
+            <text x="556" y="70" font-weight="700" font-size="14">system_server</text>
+            <text x="556" y="92" class="mut" font-size="12.5">checks the sender UID</text>
+
+            <line x1="20" y1="140" x2="740" y2="140" stroke="#d9e1dd"/>
+
+            <text x="20" y="176" font-weight="700" font-size="14" class="mut">WITH SHIZUKU</text>
+            <rect x="20" y="190" width="190" height="64" rx="10" fill="#e2f3ec" stroke="#bfe3d4"/>
+            <text x="36" y="216" font-weight="700" font-size="14">Your app</text>
+            <text x="36" y="238" class="mono" font-size="12" fill="#0a7a5a">uid 10234</text>
+            <rect x="280" y="190" width="200" height="64" rx="10" fill="#e8eafa" stroke="#cdd2f3"/>
+            <text x="296" y="216" font-weight="700" font-size="14">Shizuku server</text>
+            <text x="296" y="238" class="mono" font-size="12" fill="#3f4fb8">uid 2000 (shell)</text>
+            <rect x="540" y="190" width="200" height="64" rx="10" fill="#ffffff" stroke="#d9e1dd"/>
+            <text x="556" y="216" font-weight="700" font-size="14">system_server</text>
+            <text x="556" y="238" class="mut" font-size="12.5">sees shell: accepted</text>
+            <line x1="212" y1="222" x2="276" y2="222" stroke="#0a7a5a" stroke-width="2" marker-end="url(#ag)"/>
+            <line x1="482" y1="222" x2="536" y2="222" stroke="#3f4fb8" stroke-width="2" marker-end="url(#ab)"/>
+            <text x="244" y="282" text-anchor="middle" class="mut" font-size="12.5">request</text>
+            <text x="509" y="282" text-anchor="middle" class="mut" font-size="12.5">same request,</text>
+            <text x="509" y="298" text-anchor="middle" class="mut" font-size="12.5">as shell</text>
+            <text x="380" y="318" text-anchor="middle" font-size="12.5" class="mut">Shizuku first checks that you gave this app access.</text>
+          </svg>
+        </div>
+        <figcaption>Shizuku sends requests for other apps. The system service sees only the UID of the server. Thus, the request succeeds.</figcaption>
+      </figure>
+
+      <p>Shizuku also gives apps two more functions:</p>
+      <ul>
+        <li><strong>User services.</strong> An app can run some of its own code in a separate process with shell or root identity. This is useful for long tasks, for example file operations in <code>Android/data</code>.</li>
+        <li><strong>Access control for each app.</strong> Each app must ask for access. You accept or refuse in a Shizuku dialog. You can remove access in the Shizuku app.</li>
+      </ul>
+    </section>
+
+    <!-- 7 -->
+    <section id="why-shizuku">
+      <span class="secnum">07</span>
+      <h2>Why apps use Shizuku</h2>
+      <p>ADB already gives shell access. Why use Shizuku? Because each other method has a problem.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Method</th><th>What you get</th><th>Problem</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong><code>adb shell</code> from a laptop</strong></td>
+              <td>All shell permissions</td>
+              <td>You need a computer each time. Apps cannot do the action automatically.</td>
+            </tr>
+            <tr>
+              <td><strong><code>pm grant</code> one time</strong></td>
+              <td>One permission, permanently, for one app</td>
+              <td>Works only for <em>development</em> permissions. It cannot let an app install, disable, or remove apps.</td>
+            </tr>
+            <tr>
+              <td><strong>Root</strong></td>
+              <td>All permissions</td>
+              <td>You must unlock the bootloader. This usually erases the phone. Banking apps can stop working. Some phones do not allow it.</td>
+            </tr>
+            <tr>
+              <td><strong>Each app has its own ADB client</strong></td>
+              <td>Shell permissions, no computer (Android 11+)</td>
+              <td>You must pair each app separately. Each app runs its own shell process. Apps must read text output.</td>
+            </tr>
+            <tr>
+              <td><strong>Shizuku</strong></td>
+              <td>Shell permissions (or root, if available) for many apps</td>
+              <td>On a phone without root, you must start it again after each reboot.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Advantages of Shizuku</h3>
+      <ul>
+        <li><strong>One setup for many apps.</strong> You do the ADB steps one time after each reboot. All Shizuku apps then use the same server.</li>
+        <li><strong>Real APIs, not text.</strong> With <code>pm list packages</code>, an app gets lines of text and must read them. With Shizuku, the app uses the same Java APIs as Android. It gets correct data directly. This is faster and has fewer errors on new Android versions.</li>
+        <li><strong>Speed.</strong> A new shell process for each command is slow. A Binder request to a server that runs already is almost instant.</li>
+        <li><strong>Your control.</strong> Shizuku keeps a list of the apps that you accepted. Other apps do not get access.</li>
+        <li><strong>Same code for root and no root.</strong> A developer writes the code one time. With root, the server runs as UID 0. Without root, it runs as UID 2000.</li>
+      </ul>
+
+      <h3>Common uses</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Use</th><th>Example apps</th><th>Shell function</th></tr></thead>
+          <tbody>
+            <tr><td>Freeze, hide, or suspend apps</td><td><a href="https://github.com/aistra0528/Hail" target="_blank" rel="noopener">Hail</a></td><td>Disable or suspend apps</td></tr>
+            <tr><td>Remove preinstalled apps without root</td><td><a href="https://github.com/samolego/Canta" target="_blank" rel="noopener">Canta</a></td><td><code>pm uninstall --user 0</code> (removes the app for your user only; the system copy stays)</td></tr>
+            <tr><td>Detailed permission control</td><td>App Ops</td><td>Read and change app-ops of other apps</td></tr>
+            <tr><td>Install APKs without prompts</td><td>InstallWithOptions</td><td>Install apps as shell</td></tr>
+            <tr><td>Open <code>Android/data</code> and <code>obb</code></td><td>Some file managers</td><td>Shell can read these folders. Android 11+ blocks them for normal apps.</td></tr>
+            <tr><td>Hidden system settings</td><td>SystemUI Tuner</td><td>Change secure and global settings</td></tr>
+            <tr><td>Shell commands on the phone</td><td>aShell</td><td>A shell session without a laptop</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 8 -->
+    <section id="limits">
+      <span class="secnum">08</span>
+      <h2>Limits and reboots</h2>
+      <h3>Why Shizuku stops after a reboot</h3>
+      <p>A reboot stops all processes, including the Shizuku server. Only a process with shell identity can start it again. On a phone without root, only <code>adbd</code> has shell identity.</p>
+      <p>Android does not let an app start itself as shell during boot. If it did, all apps could get more permissions. Also, wireless debugging is off after a reboot.</p>
+      <p>Thus, after each reboot, do these steps again:</p>
+      <ol class="steps">
+        <li>Connect to Wi‑Fi.</li>
+        <li>Turn on Wireless debugging.</li>
+        <li>In Shizuku, tap Start.</li>
+      </ol>
+      <p>With root, Shizuku can start itself during boot.</p>
+      <p>On some phones, Shizuku also stops when you turn off USB debugging or developer options. Android stops processes that ADB started.</p>
+
+      <h3>What shell (and Shizuku) cannot do</h3>
+      <ul>
+        <li>Read private app data in <code>/data/data</code>.</li>
+        <li>Change the system partition. Shell removes system apps only for your user. A factory reset restores them.</li>
+        <li>Go around SELinux or other kernel rules.</li>
+        <li>Use signature permissions that Android does not give to shell.</li>
+      </ul>
+      <p>For these actions, you need root.</p>
+    </section>
+
+    <!-- 9 -->
+    <section id="safety">
+      <span class="secnum">09</span>
+      <h2>Safety</h2>
+      <p>Shizuku is open source. It uses official developer functions, not a security bug. The risk is in the apps that you give access to.</p>
+      <div class="callout warn">
+        <span class="k">Warning</span>
+        <p>An app with Shizuku access can do all that <code>adb shell</code> can do. It can install or remove apps, give itself permissions, read system logs, take screenshots, and send taps. Give access only to apps that you trust. Remove access from apps that you do not use.</p>
+      </div>
+      <p>Recommendations:</p>
+      <ul>
+        <li>After Shizuku starts, turn off Wireless debugging. The server does not need it.</li>
+        <li>Do not turn on Wireless debugging on public Wi‑Fi.</li>
+        <li>Sometimes use "Revoke wireless debugging authorizations" in Developer options. This removes old paired laptops and apps.</li>
+      </ul>
+    </section>
+
+    <!-- 10 -->
+    <section id="cheat">
+      <span class="secnum">10</span>
+      <h2>Commands and terms</h2>
+      <h3>Example commands</h3>
+<pre><code><span class="c"># Show the user that ADB commands use</span>
+<span class="p">$ </span>adb shell id
+
+<span class="c"># Disable an app (a normal app cannot do this)</span>
+<span class="p">$ </span>adb shell pm disable-user --user 0 com.example.bloat
+
+<span class="c"># Remove a preinstalled app for your user only</span>
+<span class="p">$ </span>adb shell pm uninstall --user 0 com.example.bloat
+
+<span class="c"># Give a "development" permission to an app permanently</span>
+<span class="p">$ </span>adb shell pm grant com.example.tuner android.permission.WRITE_SECURE_SETTINGS
+
+<span class="c"># Change a secure setting</span>
+<span class="p">$ </span>adb shell settings put secure show_ime_with_hard_keyboard 1
+
+<span class="c"># Show phones that mDNS found on your Wi‑Fi</span>
+<span class="p">$ </span>adb mdns services</code></pre>
+
+      <h3>Terms</h3>
+      <dl class="gloss">
+        <dt>UID</dt><dd>Linux user number. Each app has its own UID. Android uses it to control access.</dd>
+        <dt>Binder</dt><dd>Android's message system between processes. It sends the sender's UID with each request.</dd>
+        <dt>system_server</dt><dd>The process that contains most Android system services.</dd>
+        <dt>adbd</dt><dd>The ADB program on the phone. It runs commands as shell.</dd>
+        <dt>shell (UID 2000)</dt><dd>The user for ADB commands. It has many permissions, but fewer than root.</dd>
+        <dt>Pairing</dt><dd>On Android 11+, a code on the screen proves that you are the owner. It replaces the USB "Allow" dialog.</dd>
+        <dt>mDNS</dt><dd>A method to find devices on a local network automatically.</dd>
+        <dt>app_process</dt><dd>The Android tool that starts Java programs. Shizuku uses it to start its server.</dd>
+        <dt>App ops</dt><dd>Detailed controls for each app, for example "run in background".</dd>
+      </dl>
+    </section>
+
+    <footer>This page is about Android 11 to 16. Menu names, start commands, and phone-maker changes can be different on your phone. Further reading: <a href="https://shizuku.rikka.app/" target="_blank" rel="noopener">Shizuku</a>, <a href="https://developer.android.com/tools/adb" target="_blank" rel="noopener">Android Debug Bridge (adb)</a>. More <a href="/explainer/">explainers</a>.</footer>
+  </main>
+</div>
+
+</body></html>
