@@ -22,6 +22,8 @@ It works on Wi-Fi and mobile data, across the whole phone, with no app running i
 
 I use [NextDNS](https://nextdns.io) for this. The free plan has been enough for me.
 
+![With Private DNS, the phone's lookups go encrypted to NextDNS, which blocks ad, tracker and phishing domains and lets the rest through.](./cover.png)
+
 ### First, what is DNS?
 
 Whenever you open a website, or an app talks to its server, your phone first has to find out the server's IP address. It asks a DNS resolver something like "what's the IP for `example.com`?" and gets back `93.184.215.14`.
