@@ -2,6 +2,7 @@
 title: "Postgres: JSON vs JSONB data type"
 summary: "json stores your text and parses it again on every read. jsonb parses it once on write and stores it as a sorted tree in a binary format. I read the Postgres source and ran a small benchmark to see what that means."
 date: "November 10 2026"
+image: "./cover.png"
 draft: false
 tags:
 
@@ -19,6 +20,8 @@ So I went through the Postgres source code with help of [DeepWiki](https://deepw
 TLDR: 
 
 **`json` parses your document on every read. `jsonb` parses it once, on write.**
+
+![json parses the whole text on every read. jsonb does a binary search on sorted keys and jumps to the value.](./cover.png)
 
 We will go through the details in the rest of the post:
 

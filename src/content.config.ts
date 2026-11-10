@@ -13,7 +13,7 @@ const work = defineCollection({
 })
 
 const blog = defineCollection({
-  loader: glob({ base: "./src/content/blog", pattern: "**/*.{md,mdx}" }),
+  loader: glob({ base: "./src/content/blog", pattern: "**/index.{md,mdx}" }),
   schema: ({ image }) => z.object({
     title: z.string(),
     summary: z.string(),
