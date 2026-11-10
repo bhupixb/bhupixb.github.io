@@ -1,8 +1,9 @@
 ---
-title: "You should use Private DNS on Android"
+title: "You should use Private DNS"
 summary: "I block ads, trackers and malware on my Android phone without running a VPN app all day. Here is what Private DNS is, why I use NextDNS with it, and how to set it up."
 date: "November 6 2026"
 draft: false
+image: "./cover.png"
 tags:
 
 - Android
