@@ -1,0 +1,168 @@
+# Results, Postgres 13.23 in Docker on Colima (6 vCPU, 12 GB, Apple Silicon NVMe)
+
+## load + bloat
+### load
+ setseed 
+---------
+ 
+(1 row)
+
+== phase 1: years of history (older than 18 months)
+== phase 2: recent rows, before the cleanup
+== sizes before cleanup
+  total  |  heap   |  toast  | table (heap+toast) | indexes | est_rows | n_live_tup | n_dead_tup | bytes_per_row 
+---------+---------+---------+--------------------+---------+----------+------------+------------+---------------
+ 7819 MB | 4944 MB | 2525 MB | 7506 MB            | 313 MB  |  6486211 |    6486211 |          0 |          1264
+(1 row)
+
+== phase 3: the one-time cleanup migration (archive + DELETE)
+Timing is on.
+INSERT 0 5880001
+Time: 77757.727 ms (01:17.758)
+DELETE 5880003
+Time: 97011.527 ms (01:37.012)
+Timing is off.
+== sizes after cleanup + vacuum
+  total  |  heap   |  toast  | table (heap+toast) | indexes | est_rows | n_live_tup | n_dead_tup | bytes_per_row 
+---------+---------+---------+--------------------+---------+----------+------------+------------+---------------
+ 7819 MB | 4944 MB | 2525 MB | 7506 MB            | 313 MB  |   587174 |     587174 |          0 |         13963
+(1 row)
+
+== phase 4: normal inserts continue after the cleanup
+### bloated table
+  total  |  heap   |  toast  | table (heap+toast) | indexes | est_rows | n_live_tup | n_dead_tup | bytes_per_row 
+---------+---------+---------+--------------------+---------+----------+------------+------------+---------------
+ 7821 MB | 4944 MB | 2525 MB | 7508 MB            | 313 MB  |   887247 |     887247 |          0 |          9243
+(1 row)
+
+ part  |  size   | tuple_count | live_pct | dead_tuple_count | dead_pct |  free   | free_pct 
+-------+---------+-------------+----------+------------------+----------+---------+----------
+ heap  | 4944 MB |      899997 |     13.4 |                0 |      0.0 | 4238 MB |     85.7
+ toast | 2525 MB |      224261 |     12.7 |                0 |      0.0 | 2190 MB |     86.7
+(2 rows)
+
+
+## experiments
+### [bloat] 1. plain ADD CONSTRAINT (validates every row), cold cache
+  lock held by ddl: AccessExclusiveLock (granted=true)
+  wait event of the ALTER while it runs:
+  active / IO / DataFileRead
+  other sessions while it runs:
+  ERROR:  canceling statement due to lock timeout
+  ERROR:  canceling statement due to lock timeout
+  Timing is on.
+  ALTER TABLE
+  Time: 5400.029 ms (00:05.400)
+### [bloat] 2. ADD CONSTRAINT ... NOT VALID, cold cache
+  Timing is on.
+  BEGIN
+  Time: 2.651 ms
+  ALTER TABLE
+  Time: 6.381 ms
+          mode         
+  ---------------------
+   AccessExclusiveLock
+  (1 row)
+  
+  Time: 6.988 ms
+  COMMIT
+  Time: 1.068 ms
+### [bloat] 3. VALIDATE CONSTRAINT (still scans every row), cold cache
+  lock held by validate: ShareUpdateExclusiveLock (granted=true)
+  other sessions while it runs:
+  SELECT ok: 10
+  INSERT ok
+  Timing is on.
+  ALTER TABLE
+  Time: 5916.830 ms (00:05.917)
+### VACUUM FULL on bloat_vf (cold cache)
+  total  |  heap   |  toast  | table (heap+toast) | indexes | est_rows | n_live_tup | n_dead_tup | bytes_per_row 
+---------+---------+---------+--------------------+---------+----------+------------+------------+---------------
+ 7821 MB | 4944 MB | 2525 MB | 7508 MB            | 313 MB  |   887247 |          0 |          0 |          9243
+(1 row)
+
+  lock held by vf: AccessExclusiveLock (granted=true)
+  other sessions while it runs:
+  ERROR:  canceling statement due to lock timeout
+  ERROR:  canceling statement due to lock timeout
+  Timing is on.
+  VACUUM
+  Time: 54691.527 ms (00:54.692)
+  total  |  heap  | toast  | table (heap+toast) | indexes | est_rows | n_live_tup | n_dead_tup | bytes_per_row 
+---------+--------+--------+--------------------+---------+----------+------------+------------+---------------
+ 1096 MB | 694 MB | 363 MB | 1063 MB            | 33 MB   |   899997 |          0 |          0 |          1277
+(1 row)
+
+### pg_repack on bloat_repack (cold cache)
+  total  |  heap   |  toast  | table (heap+toast) | indexes | est_rows | n_live_tup | n_dead_tup | bytes_per_row 
+---------+---------+---------+--------------------+---------+----------+------------+------------+---------------
+ 7821 MB | 4944 MB | 2525 MB | 7508 MB            | 313 MB  |   887247 |          0 |          0 |          9243
+(1 row)
+
+  pg_repack took 20s
+  INFO: repacking table "public.audit_event"
+  probes during repack (SELECT + INSERT, 1s lock_timeout): ok=26 failed=0
+  total  |  heap  | toast  | table (heap+toast) | indexes | est_rows | n_live_tup | n_dead_tup | bytes_per_row 
+---------+--------+--------+--------------------+---------+----------+------------+------------+---------------
+ 1076 MB | 687 MB | 351 MB | 1043 MB            | 33 MB   |   899364 |     899364 |          0 |          1255
+(1 row)
+
+ part  |  size  | tuple_count | live_pct | dead_tuple_count | dead_pct | free  | free_pct 
+-------+--------+-------------+----------+------------------+----------+-------+----------
+ heap  | 694 MB |      899997 |     95.7 |                0 |      0.0 | 24 MB |      3.5
+ toast | 363 MB |      224261 |     88.3 |                0 |      0.0 | 40 MB |     11.0
+(2 rows)
+
+### [bloat_vf] 1. plain ADD CONSTRAINT (validates every row), cold cache
+  lock held by ddl: AccessExclusiveLock (granted=true)
+  wait event of the ALTER while it runs:
+  active / IO / DataFileRead
+  other sessions while it runs:
+  SELECT ok: 10
+  INSERT ok
+  Timing is on.
+  ALTER TABLE
+  Time: 787.728 ms
+### [bloat_vf] 2. ADD CONSTRAINT ... NOT VALID, cold cache
+  Timing is on.
+  BEGIN
+  Time: 11.212 ms
+  ALTER TABLE
+  Time: 9.379 ms
+          mode         
+  ---------------------
+   AccessExclusiveLock
+  (1 row)
+  
+  Time: 12.295 ms
+  COMMIT
+  Time: 6.029 ms
+### [bloat_vf] 3. VALIDATE CONSTRAINT (still scans every row), cold cache
+  lock held by validate: ShareUpdateExclusiveLock (granted=true)
+  other sessions while it runs:
+  SELECT ok: 10
+  INSERT ok
+  Timing is on.
+  ALTER TABLE
+  Time: 400.906 ms
+### json vs jsonb
+DROP TABLE
+SELECT 899999
+SELECT 899999
+VACUUM
+   t   |  heap  | toast  | total  
+-------+--------+--------+--------
+ json  | 338 MB | 319 MB | 662 MB
+ jsonb | 374 MB | 319 MB | 698 MB
+(2 rows)
+
+     bucket      |  docs  | avg_json_text | avg_json_stored | avg_jsonb_stored | jsonb_vs_json_pct 
+-----------------+--------+---------------+-----------------+------------------+-------------------
+ 1: < 200 B      | 447776 |            61 |              62 |               73 |              17.7
+ 2: 200 B - 2 KB | 346580 |           654 |             658 |              736 |              11.9
+ 3: 2 - 5 KB     |  88956 |          3296 |            2400 |             2402 |               0.1
+ 4: > 5 KB       |  16687 |          9886 |            6845 |             6793 |              -0.8
+                 | 899999 |           791 |             648 |              683 |               5.4
+(5 rows)
+
+DROP TABLE
